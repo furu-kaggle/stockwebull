@@ -1,0 +1,5 @@
+.venv/
+.webull_token/
+__pycache__/
+*.log
+.env
