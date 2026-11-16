@@ -40,7 +40,7 @@ def zscore(close, n):
     return ((logp - logp.rolling(n).mean()) / logp.rolling(n).std()).shift(1)   # known before the open
 
 
-def simulate(open_, close, start, end, n, off, boost, boost_mult, catch, sell, sell_frac):
+def simulate(open_, close, start, end, n, off, boost, boost_mult, catch, sell, sell_frac, path=False):
     z = zscore(close, n)
     days = close.loc[start:end].index
     week = pd.Series(days.isocalendar().week.values, index=days)
@@ -64,6 +64,8 @@ def simulate(open_, close, start, end, n, off, boost, boost_mult, catch, sell, s
         contributed.append(paid)
     w, c = pd.Series(wealth, index=days), pd.Series(contributed, index=days)
     mult = w / c
+    if path:
+        return mult
     return {"multiple": mult.iloc[-1], "highest": mult.max(), "lowest": mult.min(),
             "max fall%": (w / w.cummax() - 1).min() * 100, "cash% at end": (w.iloc[-1] - shares * close[days[-1]]) / w.iloc[-1] * 100}
 
@@ -97,6 +99,7 @@ def main():
     parser.add_argument("--others", nargs="*", default=["RGTI", "QBTS", "QUBT"])
     parser.add_argument("--start", default="2025-01-01")
     parser.add_argument("--end", default="2026-11-13")
+    parser.add_argument("--export", help="directory for the summary page's CSV files")
     args = parser.parse_args()
     names = [args.symbol] + args.others
     bars = load_bars(names)
@@ -144,6 +147,48 @@ def main():
                      "simple preset rule": simulate(open_[sym], close[sym], args.start, end, **NAMED["same + trim when very rich"])["multiple"],
                      "lump sum": lump(open_[sym], close[sym], args.start, end)["multiple"]}
     print(pd.DataFrame(ends).to_string())
+
+    if args.export:
+        import os
+        os.makedirs(args.export, exist_ok=True)
+        preset = NAMED["same + trim when very rich"]
+        px = close[sym].loc[args.start:args.end]
+        paths = pd.DataFrame({
+            "price": px,
+            "plain": simulate(open_[sym], close[sym], args.start, args.end, **PLAIN, path=True),
+            "preset": simulate(open_[sym], close[sym], args.start, args.end, **preset, path=True),
+            "best": simulate(open_[sym], close[sym], args.start, args.end, **best, path=True),
+            "lump": px / open_[sym].loc[args.start:args.end].iloc[0],
+            "z": zscore(close[sym], 100).loc[args.start:args.end],
+        }).round(3)
+        paths.index = paths.index.strftime("%Y-%m-%d")
+        paths.to_csv(os.path.join(args.export, "dca_paths.csv"), index_label="date")
+        ja = {"plain weekly": "毎週買うだけ", "pause when rich": "割高なら買わない",
+              "pause when rich + buy more when cheap": "割高なら買わない＋割安なら3倍買う",
+              "same + trim when very rich": "上に加えて、上げすぎなら20%売る", "only buy when cheap": "割安のときだけ買う",
+              "only buy in uptrends (z > 0)": "上昇中だけ買う", "lump sum on day one": "初日に一括"}
+        rules = pd.DataFrame(rows).T
+        rules.insert(0, "order", range(1, len(rules) + 1))
+        rules.index = [ja.get(k, k) for k in rules.index]
+        rules = pd.concat([rules, pd.DataFrame({"order": len(rules) + 1, **max(results, key=lambda pr: pr[1]["multiple"])[1]},
+                                               index=["総当たりで最良（割高なら買わない＋割安3倍＋上げすぎなら50%売る）"])])
+        out = rules.rename(columns={"highest": "highest", "lowest": "lowest", "max fall%": "max_fall", "cash% at end": "cash_end"})
+        out[["multiple", "highest", "lowest"]] = out[["multiple", "highest", "lowest"]].round(2)
+        out[["max_fall", "cash_end"]] = out[["max_fall", "cash_end"]].round(1)
+        out.to_csv(os.path.join(args.export, "dca_rules.csv"), index_label="rule")
+        knob = pd.DataFrame({"setting": ["売らない", "+2.5 で売る", "+2.0 で売る", "+1.5 で売る"], "order": [1, 2, 3, 4],
+                             "avg_multiple": [round(average_effect("sell", (v,))[str(v)], 2) for v in (INF, 2.5, 2.0, 1.5)]})
+        knob.to_csv(os.path.join(args.export, "dca_knob.csv"), index=False)
+        travel = pd.DataFrame(check).T[["plain weekly", f"best {sym} rule", "simple preset rule", "plain max fall%", "best max fall%"]]
+        travel.columns = ["plain", "best", "preset", "plain_fall", "best_fall"]
+        travel[["plain", "best", "preset"]] = travel[["plain", "best", "preset"]].round(2)
+        travel[["plain_fall", "best_fall"]] = travel[["plain_fall", "best_fall"]].round(1)
+        travel.insert(0, "order", range(1, len(travel) + 1))
+        travel.to_csv(os.path.join(args.export, "dca_travel.csv"), index_label="symbol")
+        ends_out = pd.DataFrame(ends).T.round(2)
+        ends_out.columns = ["plain", "best", "preset", "lump"]
+        ends_out.to_csv(os.path.join(args.export, "dca_ends.csv"), index_label="end_date")
+        print("exported to", args.export)
 
 
 if __name__ == "__main__":
