@@ -12,13 +12,13 @@ import os
 import pandas as pd
 import requests
 
-from x_sentiment import POSTS, QUERY
+from x_sentiment import POSTS, QUERY, is_relevant
 
 ACCOUNT = "5b9d56560a49281cb1e711282a1f4260"
 DATABASE = "31f8892f-6e57-4187-b903-8ba2e64e752b"
 URL = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT}/d1/database/{DATABASE}/query"
 HEADERS = {"Authorization": f"Bearer {os.getenv('CLOUDFLARE_API_TOKEN', 'proxy-injected')}"}
-BATCH = 80                                                     # rows per statement (kept well under D1's statement size limit)
+BATCH = 50                                                     # rows per statement (kept well under D1's statement size limit)
 
 
 def lit(value):
@@ -54,14 +54,16 @@ def main():
             chunk = posts.iloc[start:start + BATCH]
             values = ",".join(
                 "(" + ",".join([lit(r.id), lit(r.week), lit(r.created), lit(r.user), lit(r.followers), lit(bool(r.verified)),
-                                lit(bool(r.specialist)), lit(r.likes), lit(r.reposts), lit(r.replies), lit(r.views), lit(r.text), query]) + ")"
+                                lit(bool(r.specialist)), lit(r.likes), lit(r.reposts), lit(r.replies), lit(r.views), lit(r.text), query,
+                                lit(None if pd.isna(r.bio) else r.bio), lit(is_relevant(r.text))]) + ")"
                 for r in chunk.itertuples())
-            run("INSERT INTO x_posts (id, week, created_at, user_name, followers, verified, specialist, likes, reposts, replies, views, text, query) "
+            run("INSERT INTO x_posts (id, week, created_at, user_name, followers, verified, specialist, likes, reposts, replies, views, text, query, bio, relevant) "
                 f"VALUES {values} ON CONFLICT(id) DO UPDATE SET likes=excluded.likes, reposts=excluded.reposts, replies=excluded.replies, "
-                "views=excluded.views, followers=excluded.followers, fetched_at=datetime('now')")
+                "views=excluded.views, followers=excluded.followers, specialist=excluded.specialist, text=excluded.text, bio=excluded.bio, "
+                "relevant=excluded.relevant, fetched_at=datetime('now')")
         print(f"sent {len(posts)} posts")
     summary = run("SELECT COUNT(*) AS posts, COUNT(DISTINCT week) AS weeks, MIN(week) AS first_week, MAX(week) AS last_week, "
-                  "SUM(likes) AS likes, SUM(specialist) AS specialist_posts FROM x_posts")["results"][0]
+                  "SUM(likes) AS likes, SUM(specialist) AS specialist_posts, SUM(relevant) AS relevant_posts FROM x_posts")["results"][0]
     print("in D1:", summary)
 
 

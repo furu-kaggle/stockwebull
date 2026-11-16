@@ -31,7 +31,15 @@ QUERY = ('("zero-day" OR 0day OR CVE OR ransomware OR "data breach" OR cyberatta
          'OR "security vulnerability") min_faves:1000 lang:en')
 SPECIALIST = re.compile(r"secur|infosec|cyber|hack|malware|threat|vuln|exploit|pentest|red ?team|bug ?bount|ransom|"
                         r"reverse engineer|ciso|osint|forensic|0day|zero.?day|cve|breach", re.I)
-COLUMNS = ["week", "id", "created", "user", "followers", "verified", "specialist", "likes", "reposts", "replies", "views", "text"]
+RELEVANT = re.compile(r"hack|breach|ransomware|malware|exploit|vulnerab|cve-?\d|cyber ?attack|cybersecurity|phishing|spyware|botnet|"
+                      r"zero.?day (exploit|vuln|bug|flaw|attack)|0day|patch(ed|es)?\b|stolen data|leaked? (data|database|password)|"
+                      r"infosec|security (flaw|bug|hole|update|researcher|incident|advisory)|ddos|backdoor", re.I)
+COLUMNS = ["week", "id", "created", "user", "followers", "verified", "specialist", "likes", "reposts", "replies", "views", "text", "bio"]
+
+
+def is_relevant(text):
+    """True when a post reads as being about a security incident or flaw, not just a keyword coincidence."""
+    return bool(RELEVANT.search(str(text)))
 
 
 def fetch_week(session, since, until, pages):
@@ -50,10 +58,11 @@ def fetch_week(session, since, until, pages):
         body = resp.json()
         for t in body.get("tweets", []):
             a = t.get("author") or {}
-            bio = f"{a.get('name', '')} {a.get('userName', '')} {a.get('description', '')}"
+            about = ((a.get("profile_bio") or {}).get("description") or a.get("description") or "").replace("\n", " ").replace("\r", " ")
+            bio = f"{a.get('name', '')} {a.get('userName', '')} {about}"
             rows.append([since, t.get("id"), t.get("createdAt"), a.get("userName"), a.get("followers"), bool(a.get("isBlueVerified")),
                          bool(SPECIALIST.search(bio)), t.get("likeCount"), t.get("retweetCount"), t.get("replyCount"), t.get("viewCount"),
-                         (t.get("text") or "").replace("\n", " ").replace("\r", " ")[:200]])
+                         (t.get("text") or "").replace("\n", " ").replace("\r", " ")[:400], about[:200]])
         if not body.get("has_next_page") or not body.get("tweets"):
             break
         cursor = body.get("next_cursor", "")
@@ -74,7 +83,7 @@ def fetch(args):
             continue
         rows, _ = fetch_week(session, key, (week + pd.Timedelta(days=7)).date().isoformat(), args.pages)
         if not rows:                                           # remember empty weeks too
-            rows = [[key, None, None, None, None, None, None, 0, 0, 0, 0, ""]]
+            rows = [[key, None, None, None, None, None, None, 0, 0, 0, 0, "", ""]]
         done = pd.concat([done, pd.DataFrame(rows, columns=COLUMNS)], ignore_index=True)
         done.to_csv(POSTS, index=False)
         print(key, len(rows), flush=True)
@@ -85,6 +94,7 @@ def weekly_table():
     posts = pd.read_csv(POSTS, parse_dates=["week"])
     posts = posts[posts["id"].notna()].drop_duplicates("id")
     posts["specialist"] = posts["specialist"].astype(str).eq("True")
+    posts = posts[posts["text"].map(is_relevant)]               # drop keyword coincidences
     grouped = posts.groupby("week")
     table = pd.DataFrame({
         "posts": grouped.size(),
