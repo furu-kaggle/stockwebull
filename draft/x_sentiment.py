@@ -108,10 +108,10 @@ def weekly_table():
     return table, posts
 
 
-def spike(series, window=52):
+def spike(series, window=26):
     logged = np.log1p(series)
     prior = logged.shift(1)
-    return (logged - prior.rolling(window, min_periods=26).mean()) / prior.rolling(window, min_periods=26).std()
+    return (logged - prior.rolling(window, min_periods=12).mean()) / prior.rolling(window, min_periods=12).std()
 
 
 def rank_corr(x, y, step=1):
@@ -122,6 +122,8 @@ def rank_corr(x, y, step=1):
 def analyze(args):
     from data import load_bars
     table, posts = weekly_table()
+    if args.since:                                             # work on one continuous stretch of weeks
+        table, posts = table[table.index >= args.since], posts[posts.week >= args.since]
     close = load_bars(["CIBR", "QQQ"])["close"]
     weekly = close.resample("W-FRI").last()
     weekly.index = weekly.index - pd.Timedelta(days=5)          # label each Friday close by its week's Sunday
@@ -165,6 +167,7 @@ def main():
     parser.add_argument("command", choices=["fetch", "analyze"])
     parser.add_argument("--start", default="2022-01-30")
     parser.add_argument("--pages", type=int, default=3)
+    parser.add_argument("--since", help="analyze only weeks on or after this date")
     args = parser.parse_args()
     (fetch if args.command == "fetch" else analyze)(args)
 
