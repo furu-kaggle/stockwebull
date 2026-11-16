@@ -60,3 +60,23 @@ UNIVERSE = [
     ("QQQ", "market", "bench", "Nasdaq-100"),
     ("SPY", "market", "bench", "S&P 500"),
 ]
+
+# Access to restricted frontier cyber models (vetted-access programs), from public reporting as of 2026-11-16.
+#   glasswing : Anthropic Project Glasswing (Claude Mythos)  - launch partners Apr 2026, expansion Jun 2026
+#   tac       : OpenAI Trusted Access for Cyber (GPT-5.x-Cyber) - direct model access
+#   daybreak  : OpenAI Daybreak Defense Network - partner listing; direct model access not confirmed
+# Names not listed here: no public evidence found (not the same as confirmed absence).
+AI_ACCESS = {
+    "CRWD": ["glasswing", "tac", "daybreak"],
+    "PANW": ["glasswing", "tac", "daybreak"],
+    "OKTA": ["glasswing", "daybreak"],        # Glasswing expansion per FT report
+    "NTSK": ["glasswing"],                    # Glasswing expansion per CyberScoop sources
+    "RBRK": ["glasswing"],                    # Glasswing expansion per CyberScoop sources
+    "NET": ["tac", "daybreak"],
+    "ZS": ["tac", "daybreak"],
+    "S": ["tac", "daybreak"],
+    "CHKP": ["tac", "daybreak"],
+    "FTNT": ["daybreak"],
+    "TENB": ["daybreak"],
+    "AKAM": ["daybreak"],
+}
