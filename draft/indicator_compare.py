@@ -100,6 +100,7 @@ def main():
     parser.add_argument("symbols", nargs="*", default=["IONQ", "RGTI", "QBTS", "QUBT"])
     parser.add_argument("--start", default="2025-01-01")
     parser.add_argument("--end", default="2026-11-13")
+    parser.add_argument("--out", default="indicator_compare.csv")
     args = parser.parse_args()
     bars = load_bars(args.symbols)
     per_share = load_per_share(args.symbols)
@@ -149,7 +150,8 @@ def main():
         days = sells_log[(name, sym)]
         text = ", ".join(f"{d.strftime('%y-%m-%d')} ${close[d]:.0f}" for d in days[:14]) + (" ..." if len(days) > 14 else "")
         print(f"  {name:24} {len(days):2d}  {text}")
-    table.to_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "indicator_compare.csv"), index=False)
+    table["plain"] = [plain[s]["multiple"] for s in table.symbol]
+    table.to_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), args.out), index=False)
 
 
 if __name__ == "__main__":
