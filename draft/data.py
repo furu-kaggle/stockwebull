@@ -68,3 +68,41 @@ def load_income(symbols, refresh=False):
             cached = pd.concat([cached, fresh], ignore_index=True)
             pd.to_pickle(cached, path)
     return cached[cached["symbol"].isin(symbols)].copy() if len(cached) else cached
+
+
+def load_intraday(symbols, timespan="M30", refresh=False):
+    """Regular-session intraday bars, as far back as the API allows (180 days for minute bars).
+
+    Returns {field: DataFrame[bar start, New York time x symbol]} for open, high, low, close, volume.
+    """
+    os.makedirs(CACHE, exist_ok=True)
+    path = os.path.join(CACHE, f"intraday_{timespan}.pkl")
+    cached = pd.read_pickle(path) if os.path.exists(path) and not refresh else None
+    have = set(cached["close"].columns) if cached is not None else set()
+    missing = [s for s in symbols if s not in have]
+    if missing:
+        data, rows = _client(), []
+        floor_ms = int((pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=178)).timestamp() * 1000)
+        for sym in missing:
+            end = None
+            for _ in range(6):                                  # page backwards until the 180-day limit
+                kwargs = {"end_time": end} if end else {}
+                try:
+                    resp = data.market_data.get_history_bar(sym, "US_STOCK", timespan, count=str(MAX_BARS), **kwargs).json()
+                except Exception:
+                    break
+                bars = (resp["result"][0].get("result") if isinstance(resp, dict) else resp) or []
+                if not bars:
+                    break
+                for b in bars:
+                    rows.append((pd.Timestamp(b["time"]).tz_convert("America/New_York").tz_localize(None), sym,
+                                 float(b["open"]), float(b["high"]), float(b["low"]), float(b["close"]), float(b["volume"])))
+                earliest = int(min(pd.Timestamp(b["time"]).timestamp() for b in bars) * 1000)
+                if len(bars) < MAX_BARS or earliest - 1 <= floor_ms:
+                    break
+                end = earliest - 1
+        long = pd.DataFrame(rows, columns=["time", "symbol", "open", "high", "low", "close", "volume"]).drop_duplicates(["time", "symbol"])
+        fresh = {f: long.pivot(index="time", columns="symbol", values=f) for f in ("open", "high", "low", "close", "volume")}
+        cached = fresh if cached is None else {f: cached[f].join(fresh[f], how="outer") for f in fresh}
+        pd.to_pickle(cached, path)
+    return {f: df[[s for s in symbols if s in df]].sort_index() for f, df in cached.items()}
