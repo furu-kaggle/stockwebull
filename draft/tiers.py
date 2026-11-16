@@ -27,6 +27,14 @@ from _client import make_client
 from data import load_bars, load_income
 from universe import UNIVERSE
 
+ABOUT_JA = {
+    "CRWD": "端末防御の最大手", "PANW": "業界最大の総合プラットフォーム", "FTNT": "ファイアウォール機器", "ZS": "ゼロトラスト",
+    "NTSK": "クラウド利用時のデータ保護", "OKTA": "ログイン管理", "SAIL": "アクセス権限の管理", "S": "端末防御",
+    "CHKP": "ファイアウォールの老舗", "RBRK": "バックアップと復旧", "VRNS": "機密データの保護", "QLYS": "脆弱性管理",
+    "TENB": "脆弱性管理", "RPD": "脆弱性管理と監視運用", "GEN": "個人向けセキュリティ", "RDWR": "DDoS対策",
+    "OSPN": "銀行向け認証", "NET": "サイト防御と配信（兼業）", "AKAM": "配信とセキュリティ（兼業）",
+    "FFIV": "通信振り分け機器（兼業）", "ATEN": "通信振り分け機器（兼業）", "BB": "秘匿通信と車載OS（兼業）",
+}
 GROWTH_BAR = 8.0   # % TTM revenue growth that counts as "growing"
 MARGIN_BAR = 15.0  # % TTM operating margin that counts as "solid"
 
@@ -105,6 +113,7 @@ def tier(row):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--csv")
+    parser.add_argument("--export", help="write a compact CSV (plain column names, rounded) for the summary page")
     args = parser.parse_args()
     meta = {u[0]: u for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")}
     val = valuation(list(meta))
@@ -125,7 +134,19 @@ def main():
     pd.set_option("display.width", 250, "display.float_format", "{:.1f}".format)
     print(table.to_string())
     if args.csv:
-        table.to_csv(args.csv)
+        table.to_csv(args.csv, index_label="symbol")
+    if args.export:
+        as_of = load_bars(list(meta))["close"].index[-1].date().isoformat()
+        out = pd.DataFrame({
+            "rank": table["rank"], "tier": table["tier"],
+            "priced_in": table["priced_in"].map({"high": "済み", "mid": "中立", "low": "未"}),
+            "about": [ABOUT_JA.get(s, meta[s][3]) for s in table.index],
+            "growth": table["growth%"].round(1), "op_margin": table["op_margin%"].round(1),
+            "ps": table["P/S"].round(1), "ps_pctile": table["ps_pctile"].round(0).astype(int),
+            "vs_peers": table["vs_peers"].round(1), "from_high": table["from_high%"].round(0).astype(int),
+            "as_of": as_of,
+        })
+        out.to_csv(args.export, index_label="symbol")
 
 
 if __name__ == "__main__":
