@@ -1,6 +1,7 @@
 """Monthly counts of published CVEs from the NVD API, with a chart.
 
-Counts every CVE by its NVD publication date, plus those NVD scores CRITICAL (CVSS v3).
+Counts every CVE by its NVD publication date, plus those scored CRITICAL (CVSS v3). The critical
+count is kept in the CSV only: scoring lags publication by months, so recent months undercount.
 The API allows 5 requests per 30 seconds without a key, so a full refresh takes several minutes;
 finished months are cached in draft/cve_monthly.csv and only missing or recent months are fetched.
 
@@ -70,15 +71,16 @@ def main():
     x = range(len(table))
     ax.bar([i for i, m in enumerate(table.index) if m in full.index], full["total"], color="#2563eb", width=0.75)
     ax.bar([i for i, m in enumerate(table.index) if m in partial.index], partial["total"], color="#93c5fd", width=0.75)
-    ax.bar(list(x), table["critical"], color="#b91c1c", width=0.75)
+    # "critical" stays in the CSV but is not drawn: NVD scores CVEs with a long lag, so recent months
+    # look artificially low and the series is not comparable over time.
     ax.set_xticks([i for i, m in enumerate(table.index) if m.endswith(("-01", "-04", "-07", "-10"))])
     ax.set_xticklabels([m for m in table.index if m.endswith(("-01", "-04", "-07", "-10"))], fontsize=9)
     if "2026-04" in table.index:
         i = list(table.index).index("2026-04")
         ax.axvline(i - 0.5, color="#6b7280", lw=1, ls="--")
-        ax.text(i - 0.4, ax.get_ylim()[1] * 0.93, "Claude Mythos / Glasswing\n(Apr 2026)", fontsize=9, color="#374151", va="top")
+        ax.text(i - 0.7, ax.get_ylim()[1] * 0.93, "Claude Mythos / Glasswing\n(Apr 2026)", fontsize=9, color="#374151", va="top", ha="right")
     fig.text(0.075, 0.95, "CVEs published per month (NVD)", fontsize=13, fontweight="bold", va="top")
-    fig.text(0.075, 0.90, "Blue: all CVEs (pale = month still in progress).  Red: scored CRITICAL by NVD.",
+    fig.text(0.075, 0.90, f"By NVD publication date. Pale bar = month still in progress (through day {int(partial['through'].iloc[-1]) if len(partial) else ''}).",
              fontsize=9, color="#6b7280", va="top")
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{int(v):,}"))
     ax.grid(axis="y", color="#e5e7eb", lw=0.6)
