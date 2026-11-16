@@ -49,18 +49,25 @@ def main():
         posts = posts[posts["id"].notna()].drop_duplicates("id")
         posts["specialist"] = posts["specialist"].astype(str).eq("True")
         posts["verified"] = posts["verified"].astype(str).eq("True")
+        kinds_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "x_kinds.csv")
+        if os.path.exists(kinds_path):                         # classification from x_classify.py
+            kinds = pd.read_csv(kinds_path, dtype={"id": str}).rename(columns={"source": "kind_source"})
+            posts = posts.merge(kinds[["id", "kind", "kind_source"]], on="id", how="left")
+        else:
+            posts["kind"], posts["kind_source"] = None, None
         query = lit(QUERY)
         for start in range(0, len(posts), BATCH):
             chunk = posts.iloc[start:start + BATCH]
             values = ",".join(
                 "(" + ",".join([lit(r.id), lit(r.week), lit(r.created), lit(r.user), lit(r.followers), lit(bool(r.verified)),
                                 lit(bool(r.specialist)), lit(r.likes), lit(r.reposts), lit(r.replies), lit(r.views), lit(r.text), query,
-                                lit(None if pd.isna(r.bio) else r.bio), lit(is_relevant(r.text))]) + ")"
+                                lit(None if pd.isna(r.bio) else r.bio), lit(is_relevant(r.text)),
+                                lit(None if pd.isna(r.kind) else r.kind), lit(None if pd.isna(r.kind_source) else r.kind_source)]) + ")"
                 for r in chunk.itertuples())
-            run("INSERT INTO x_posts (id, week, created_at, user_name, followers, verified, specialist, likes, reposts, replies, views, text, query, bio, relevant) "
+            run("INSERT INTO x_posts (id, week, created_at, user_name, followers, verified, specialist, likes, reposts, replies, views, text, query, bio, relevant, kind, kind_source) "
                 f"VALUES {values} ON CONFLICT(id) DO UPDATE SET likes=excluded.likes, reposts=excluded.reposts, replies=excluded.replies, "
                 "views=excluded.views, followers=excluded.followers, specialist=excluded.specialist, text=excluded.text, bio=excluded.bio, "
-                "relevant=excluded.relevant, fetched_at=datetime('now')")
+                "relevant=excluded.relevant, kind=excluded.kind, kind_source=excluded.kind_source, fetched_at=datetime('now')")
         print(f"sent {len(posts)} posts")
     summary = run("SELECT COUNT(*) AS posts, COUNT(DISTINCT week) AS weeks, MIN(week) AS first_week, MAX(week) AS last_week, "
                   "SUM(likes) AS likes, SUM(specialist) AS specialist_posts, SUM(relevant) AS relevant_posts FROM x_posts")["results"][0]

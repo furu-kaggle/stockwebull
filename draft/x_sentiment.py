@@ -91,7 +91,7 @@ def fetch(args):
 
 
 def weekly_table():
-    posts = pd.read_csv(POSTS, parse_dates=["week"])
+    posts = pd.read_csv(POSTS, parse_dates=["week"], dtype={"id": str})   # ids are 19 digits: floats would round them
     posts = posts[posts["id"].notna()].drop_duplicates("id")
     posts["specialist"] = posts["specialist"].astype(str).eq("True")
     posts = posts[posts["text"].map(is_relevant)]               # drop keyword coincidences
