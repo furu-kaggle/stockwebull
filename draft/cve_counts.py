@@ -25,13 +25,18 @@ def count(year, month, last_day, severity=None):
               "pubEndDate": f"{year}-{month:02d}-{last_day:02d}T23:59:59.999Z", "resultsPerPage": 1}
     if severity:
         params["cvssV3Severity"] = severity
-    for attempt in range(4):
-        resp = requests.get(API, params=params, timeout=40)
-        if resp.status_code == 200:
-            time.sleep(6.5)
-            return resp.json()["totalResults"]
+    error = None
+    for attempt in range(6):
+        try:
+            resp = requests.get(API, params=params, timeout=90)
+            if resp.status_code == 200:
+                time.sleep(6.5)
+                return resp.json()["totalResults"]
+            error = f"HTTP {resp.status_code}"
+        except requests.RequestException as err:             # the API is slow and times out now and then
+            error = type(err).__name__
         time.sleep(15 * (attempt + 1))
-    raise RuntimeError(f"NVD returned {resp.status_code} for {year}-{month:02d}")
+    raise RuntimeError(f"NVD failed for {year}-{month:02d}: {error}")
 
 
 def main():
