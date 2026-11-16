@@ -8,6 +8,7 @@ Usage: python draft/d1_sync.py [--check]
 """
 import argparse
 import os
+import time
 
 import pandas as pd
 import requests
@@ -33,7 +34,11 @@ def lit(value):
 
 
 def run(sql):
-    resp = requests.post(URL, headers=HEADERS, json={"sql": sql}, timeout=60)
+    for attempt in range(5):
+        resp = requests.post(URL, headers=HEADERS, json={"sql": sql}, timeout=60)
+        if resp.status_code != 429:                            # Cloudflare asks callers to slow down now and then
+            break
+        time.sleep(10 * (attempt + 1))
     body = resp.json()
     if resp.status_code != 200 or not body.get("success"):
         raise RuntimeError(f"D1 query failed ({resp.status_code}): {str(body.get('errors'))[:300]}")
