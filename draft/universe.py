@@ -79,4 +79,19 @@ AI_ACCESS = {
     "FTNT": ["daybreak"],
     "TENB": ["daybreak"],
     "AKAM": ["daybreak"],
+    "RPD": ["glasswing"],                     # Rapid7 red team blog describes using Claude Mythos
 }
+
+# Offensive / penetration-testing AI, ranked by how much is the company's own (public reporting, 2026-11-16).
+# No name in the universe was found to have built its own pentest LLM; this ranks the closest.
+#   own_models : trains its own security models      offensive : sells or runs AI-driven offensive testing
+PENTEST_AI_RANK = [
+    # symbol, own_models, offensive, evidence
+    ("CRWD", True, True, "Own SafeMind models + Cyber Superintelligence Lab; acquiring Dreadnode (offensive AI testing), pending"),
+    ("PANW", False, True, "Unit 42 Continuous Frontier AI Defense: own multi-model harness over Mythos/GPT; Protect AI red teaming"),
+    ("RPD", False, True, "Red team multi-agent architecture on Claude Mythos; maintains Metasploit"),
+    ("ZS", False, True, "SPLX acquisition: AI Red Teaming in AI Protect (tests AI apps, not infrastructure)"),
+    ("CHKP", False, True, "Lakera Red acquisition (tests AI apps); reported as limited release"),
+    ("S", False, True, "AI red teaming for homegrown apps added Mar 2026 (Prompt Security)"),
+    ("TENB", False, False, "Tenable OPEN for AI: exposure data for customers' third-party models"),
+]
