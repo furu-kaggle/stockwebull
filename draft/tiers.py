@@ -99,8 +99,9 @@ def peer_relative(table):
 
 
 def priced_in(row):
-    expensive = (row["ps_pctile"] >= 70) + (row["vs_peers"] >= 1.25)
-    cheap = (row["ps_pctile"] <= 40) + (row["vs_peers"] <= 0.8)
+    # int() matters: adding two numpy booleans gives True, not 2.
+    expensive = int(row["ps_pctile"] >= 70) + int(row["vs_peers"] >= 1.25)
+    cheap = int(row["ps_pctile"] <= 40) + int(row["vs_peers"] <= 0.8)
     return "high" if expensive == 2 else "low" if cheap == 2 else "mid"
 
 
