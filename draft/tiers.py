@@ -12,6 +12,9 @@ second axis says how much is already priced in:
   vs_peers    today's P/S divided by the P/S its growth and margin would earn among these peers
   priced_in   "high" if both say expensive, "low" if both say cheap, else "mid"
 
+Ranking (room for expectations to build): names that are not already priced in come first, ordered by
+tier, then by how low today's P/S sits in the stock's own history. Fully priced-in names go last.
+
 Usage: python draft/tiers.py [--csv out.csv]
 """
 import argparse
@@ -115,7 +118,10 @@ def main():
     table["kind"] = [meta[s][2] for s in table.index]
     cols = ["tier", "priced_in", "growth%", "op_margin%", "P/S", "ps_low", "ps_high", "ps_pctile", "vs_peers", "from_high%",
             "P/E", "growth_prev%", "op_margin_prev%", "rule40", "cap_$B", "kind", "last_quarter"]
-    table = table[cols].sort_values(["tier", "rule40"], ascending=[True, False])
+    table["full"] = table["priced_in"] == "high"
+    table = table.sort_values(["full", "tier", "ps_pctile"])
+    table.insert(0, "rank", range(1, len(table) + 1))
+    table = table[["rank"] + cols]
     pd.set_option("display.width", 250, "display.float_format", "{:.1f}".format)
     print(table.to_string())
     if args.csv:
