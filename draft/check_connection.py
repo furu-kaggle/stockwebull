@@ -20,7 +20,7 @@ from webull.core.http.initializer.config.config_operation import ConfigOperation
 from webull.core.http.initializer.token.token_manager import TokenManager
 from webull.trade.trade_client import TradeClient
 
-TOKEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".webull_token")
+TOKEN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".webull_token")
 
 
 def mask(value):
