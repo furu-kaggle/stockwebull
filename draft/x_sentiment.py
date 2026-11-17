@@ -12,7 +12,7 @@ research, otherwise "general" (news outlets, commentators, companies, ordinary a
 `fetch` downloads missing weeks into draft/x_posts.csv (finished weeks are never fetched twice);
 `analyze` compares weekly spikes with the security ETF's later returns and with Google Trends.
 
-Usage: python draft/x_sentiment.py fetch [--start 2022-01-30] [--pages 3]
+Usage: python draft/x_sentiment.py fetch [--start 2022-01-30] [--end 2026-03-29] [--pages 3] [--topic security|quantum]
        python draft/x_sentiment.py analyze
 """
 import argparse
@@ -42,12 +42,20 @@ def is_relevant(text):
     return bool(RELEVANT.search(str(text)))
 
 
-def fetch_week(session, since, until, pages):
+TOPICS = {
+    # topic: (query, csv path) - "security" is the default used by the analysis below
+    "security": (QUERY, POSTS),
+    "quantum": ('("quantum computing" OR "quantum computer" OR "quantum stocks" OR qubit OR IONQ OR Rigetti OR "D-Wave" OR $IONQ OR $RGTI OR $QBTS) '
+                'min_faves:500 lang:en', os.path.join(HERE, "x_posts_quantum.csv")),
+}
+
+
+def fetch_week(session, since, until, pages, query=QUERY):
     rows, cursor, complete = [], "", True
     for page in range(pages):
         for attempt in range(4):
             try:
-                resp = session.get(API, params={"query": f"{QUERY} since:{since} until:{until}", "queryType": "Top", "cursor": cursor}, timeout=60)
+                resp = session.get(API, params={"query": f"{query} since:{since} until:{until}", "queryType": "Top", "cursor": cursor}, timeout=60)
                 if resp.status_code == 200:
                     break
             except requests.RequestException:
@@ -71,9 +79,11 @@ def fetch_week(session, since, until, pages):
 
 
 def fetch(args):
-    done = pd.read_csv(POSTS) if os.path.exists(POSTS) else pd.DataFrame(columns=COLUMNS)
+    query, path = TOPICS[args.topic]
+    done = pd.read_csv(path, dtype={"id": str}) if os.path.exists(path) else pd.DataFrame(columns=COLUMNS)
     today = pd.Timestamp.now(tz="UTC").tz_localize(None).normalize()
-    weeks = [w for w in pd.date_range(args.start, today, freq="W-SUN") if w + pd.Timedelta(days=7) <= today]
+    last = pd.Timestamp(args.end) if args.end else today
+    weeks = [w for w in pd.date_range(args.start, last, freq="W-SUN") if w + pd.Timedelta(days=7) <= today]
     have = set(done["week"].astype(str))
     session = requests.Session()
     session.headers["X-API-Key"] = os.environ["TWITTERAPI_IO_SECRET"]
@@ -81,11 +91,11 @@ def fetch(args):
         key = week.date().isoformat()
         if key in have:
             continue
-        rows, _ = fetch_week(session, key, (week + pd.Timedelta(days=7)).date().isoformat(), args.pages)
+        rows, _ = fetch_week(session, key, (week + pd.Timedelta(days=7)).date().isoformat(), args.pages, query)
         if not rows:                                           # remember empty weeks too
             rows = [[key, None, None, None, None, None, None, 0, 0, 0, 0, "", ""]]
         done = pd.concat([done, pd.DataFrame(rows, columns=COLUMNS)], ignore_index=True)
-        done.to_csv(POSTS, index=False)
+        done.to_csv(path, index=False)
         print(key, len(rows), flush=True)
     print("weeks stored:", done["week"].nunique(), "posts:", int(done["id"].notna().sum()))
 
@@ -168,6 +178,8 @@ def main():
     parser.add_argument("--start", default="2022-01-30")
     parser.add_argument("--pages", type=int, default=3)
     parser.add_argument("--since", help="analyze only weeks on or after this date")
+    parser.add_argument("--topic", choices=list(TOPICS), default="security")
+    parser.add_argument("--end", help="fetch: last week to download")
     args = parser.parse_args()
     (fetch if args.command == "fetch" else analyze)(args)
 
