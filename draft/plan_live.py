@@ -39,6 +39,19 @@ def fresh_bars(data, symbols, count=600):
     return {f: long.pivot(index="date", columns="symbol", values=f)[symbols].sort_index() for f in ("open", "close")}
 
 
+def latest_prices(data, symbols):
+    """Latest regular-session trade price per symbol and the New York date it belongs to."""
+    prices, days = {}, set()
+    for i in range(0, len(symbols), 10):
+        resp = data.market_data.get_batch_history_bar(symbols[i:i + 10], "US_STOCK", "M1", count="1").json()
+        for item in resp["result"]:
+            bars = item.get("result") or []
+            if bars:
+                prices[item["symbol"]] = float(bars[0]["close"])
+                days.add(pd.Timestamp(bars[0]["time"]).tz_convert("America/New_York").date())
+    return pd.Series(prices), days
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--live", action="store_true", help="send the orders (default: dry run)")
@@ -86,8 +99,12 @@ def main():
     plain_daily = min(plain_daily, DAILY_CAP_YEN / 2 / rate)
     orders = decide(today, cash, shares, days_left, plain_daily, panels, CORE, others, CFG)
 
-    # Size orders with the latest price available (today's running bar if there is one).
-    last = bars["close"].loc[today].fillna(panels["prev_close"].loc[today])
+    # Size orders with the price trading right now; if the market has not traded today, it is closed.
+    now_px, traded_days = latest_prices(data, CORE + [s for s in orders if s not in CORE])
+    if args.live and today.date() not in traded_days:
+        print(f"No trades today ({today.date()}) in {', '.join(CORE)}: the market looks closed, so nothing is sent.")
+        return
+    last = now_px.reindex(symbols).fillna(panels["prev_close"].loc[today])
     print(f"{today.date()}  day {len(state['done_days']) + 1} of {state['days']}   cash ${cash:,.2f} (yen at {rate:.0f}/$)   plain daily ${plain_daily:.2f}"
           f"   prices as of {bars['close'].dropna(how='all').index[-1].date()}")
     view = pd.DataFrame({"P/S rank": panels["rank"].loc[today], "50d z": panels["z50"].loc[today], "above band": panels["above_band"].loc[today],
