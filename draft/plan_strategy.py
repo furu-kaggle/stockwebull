@@ -7,7 +7,7 @@ Plan: spend a fixed budget over `days` trading days, buying every day.
                  share drops to 50% and up to three other names share the rest
   per name       cheap (P/S rank <= 20) counts 1.5, normal 1, rich (>= 80) 0.5, very rich (>= 95) 0;
                  nothing is bought in a name that is above its +1 sigma Bollinger band or jumped 15% in 5 days
-  other names    must be growing and profitable where that is known; cheapest P/S rank first
+  other names    must be growing and profitable where that is known; names in cfg["prefer"] first, then cheapest P/S rank
   selling        only an unexplained spike: P/S rank >= 95 and 50-day z >= 2 with no earnings release in the
                  last five sessions. The holding above its target weight is sold; a name sold today is not
                  bought today; the cash goes back into the remaining days
@@ -86,7 +86,8 @@ def decide(day, cash, shares, days_left, plain_daily, panels, core, others, cfg=
     core_f = {s: factor(s) for s in core}
     core_rich = any(f < 1 for f in core_f.values())
     pool = [s for s in others if factor(s) >= 1 and panels["quality"].loc[day, s]]
-    pool = sorted(pool, key=lambda s: (rank.get(s, 50) if not np.isnan(rank.get(s, np.nan)) else 50))[:cfg["max_others"] if core_rich else 1]
+    prefer = cfg.get("prefer", [])                              # names a person judged to be the better places to move to
+    pool = sorted(pool, key=lambda s: (s not in prefer, rank.get(s, 50) if not np.isnan(rank.get(s, np.nan)) else 50))[:cfg["max_others"] if core_rich else 1]
     weights = {}
     core_share = cfg["core_share_rich"] if core_rich else cfg["core_share"]
     if sum(core_f.values()) > 0:

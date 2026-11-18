@@ -24,6 +24,8 @@ from universe import UNIVERSE
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(HERE, "plan_state.json")
 CORE = ["QLYS", "TENB"]
+EXTRA = ["AXON"]                      # outside the 22 security names; added 2026-11-19 as a place to move to
+PREFER = ["GEN", "FTNT", "AXON"]      # where to go first when the core is rich (results improving, multiple still low)
 DAILY_CAP_YEN = 3300
 
 
@@ -61,7 +63,7 @@ def main():
     state = json.load(open(STATE)) if os.path.exists(STATE) else {"start": None, "days": 60, "yen_per_dollar": 155.0, "done_days": []}
     client = make_client()
     data, trade = DataClient(client), TradeClient(client)
-    symbols = [u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")]
+    symbols = [u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")] + EXTRA
     others = [s for s in symbols if s not in CORE]
 
     account = trade.account_v2.get_account_list().json()[0]["account_id"]
@@ -97,7 +99,7 @@ def main():
     days_left = state["days"] - len(state["done_days"])
     plain_daily = (cash + (shares * panels["prev_close"].loc[today]).sum()) / state["days"]
     plain_daily = min(plain_daily, DAILY_CAP_YEN / 2 / rate)
-    orders = decide(today, cash, shares, days_left, plain_daily, panels, CORE, others, CFG)
+    orders = decide(today, cash, shares, days_left, plain_daily, panels, CORE, others, dict(CFG, prefer=PREFER))
 
     # Size orders with the price trading right now; if the market has not traded today, it is closed.
     now_px, traded_days = latest_prices(data, CORE + [s for s in orders if s not in CORE])
