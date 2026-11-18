@@ -8,6 +8,8 @@ Plan: spend a fixed budget over `days` trading days, buying every day.
   per name       cheap (P/S rank <= 20) counts 1.5, normal 1, rich (>= 80) 0.5, very rich (>= 95) 0;
                  nothing is bought in a name that is above its +1 sigma Bollinger band or jumped 15% in 5 days
   other names    must be growing and profitable where that is known; names in cfg["prefer"] first, then cheapest P/S rank
+  outside        when the core is rich and no other security name qualifies, the rest goes to cfg["outside"]
+                 (names from other sectors) at the full pace, instead of slowing down
   selling        only an unexplained spike: P/S rank >= 95 and 50-day z >= 2 with no earnings release in the
                  last five sessions. The holding above its target weight is sold; a name sold today is not
                  bought today; the cash goes back into the remaining days
@@ -99,13 +101,19 @@ def decide(day, cash, shares, days_left, plain_daily, panels, core, others, cfg=
         rest = 1 - sum(weights.get(s, 0) for s in core)
         for s in pool:
             weights[s] = rest / len(pool)
+    if not pool:                                               # nowhere left inside the sector: the rest goes outside it
+        outside = [s for s in cfg.get("outside", []) if factor(s) > 0]
+        rest = 1 - sum(weights.values())
+        for s in outside:
+            weights[s] = rest / len(outside)
     total_w = sum(weights.values())
     if total_w <= 0:                                           # nothing attractive: buy the least stretched core name at half pace
         fallback = min(core, key=lambda s: rank.get(s, 50) if not np.isnan(rank.get(s, np.nan)) else 50)
         weights, total_w, pace = {fallback: 1.0}, 1.0, 0.5
     else:
         cheap_core = np.mean([f for f in core_f.values()]) >= 1.25
-        pace = 2.0 if cheap_core else 0.5 if (core_rich and not pool) else 1.0
+        went_outside = any(s in weights for s in cfg.get("outside", []))
+        pace = 2.0 if cheap_core else 0.5 if (core_rich and not pool and not went_outside) else 1.0
     budget = min(cash / max(days_left, 1) * pace, 2 * plain_daily, cash)
     buys = {s: budget * w / total_w for s, w in weights.items() if budget * w / total_w >= cfg["min_order"]}
     for s, amount in sorted(buys.items(), key=lambda kv: -kv[1])[:cfg["max_orders"] - len(orders)]:
