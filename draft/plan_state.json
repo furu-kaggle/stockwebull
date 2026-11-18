@@ -3,7 +3,8 @@
  "days": 60,
  "yen_per_dollar": 155.0,
  "done_days": [
-  "2026-11-17"
+  "2026-11-17",
+  "2026-11-18"
  ],
  "orders": {
   "2026-11-17": [
@@ -36,6 +37,26 @@
     "side": "BUY",
     "qty": 0.08496,
     "client_order_id": "4c2b7cb5d8644f349db0eb58ebe2b5e4"
+   }
+  ],
+  "2026-11-18": [
+   {
+    "symbol": "FFIV",
+    "side": "BUY",
+    "qty": 0.00682,
+    "client_order_id": "7c0ec313d87b48b191fe4c507fd858d5"
+   },
+   {
+    "symbol": "QLYS",
+    "side": "BUY",
+    "qty": 0.02335,
+    "client_order_id": "91b1988f0c08432a9053c3dfdfa9b02d"
+   },
+   {
+    "symbol": "TENB",
+    "side": "BUY",
+    "qty": 0.10435,
+    "client_order_id": "134f46157f324689aa5d19f050871aa9"
    }
   ]
  }
