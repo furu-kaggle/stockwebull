@@ -1,6 +1,6 @@
 {
  "start": "2026-11-17",
- "days": 60,
+ "days": 23,
  "yen_per_dollar": 155.0,
  "done_days": [
   "2026-11-17",
@@ -59,5 +59,6 @@
     "client_order_id": "134f46157f324689aa5d19f050871aa9"
    }
   ]
- }
+ },
+ "note": "2026-11-19: period shortened from 60 to 23 trading days (last day 2026-12-18) at the owner's request"
 }

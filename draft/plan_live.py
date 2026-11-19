@@ -27,7 +27,7 @@ CORE = ["QLYS", "TENB"]
 EXTRA = ["AXON"]                      # outside the 22 security names; added 2026-11-19 as a place to move to
 OUTSIDE = ["UI"]                      # other sectors; used only when nothing in the list above qualifies
 PREFER = ["GEN", "FTNT", "AXON"]      # where to go first when the core is rich (results improving, multiple still low)
-DAILY_CAP_YEN = 3300
+DAILY_CAP_YEN = 9000                  # twice the plain daily amount; raised from 3,300 when the period was cut to one month (2026-11-19)
 
 
 def fresh_bars(data, symbols, count=600):

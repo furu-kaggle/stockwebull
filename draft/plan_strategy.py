@@ -1,6 +1,6 @@
 """The savings-plan rules (MVP) and their backtest.
 
-Plan: spend a fixed budget over `days` trading days, buying every day.
+Plan: spend a fixed budget over `days` trading days, buying every day (60 at first; 23 from 2026-11-19).
   budget today   cash left / days left, times 2 when the core is cheap, times 0.5 when nothing is attractive
                  (never more than twice the plain daily amount)
   where it goes  80% to the two core names, 20% to the best other name; when a core name is rich the core
