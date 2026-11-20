@@ -5,7 +5,8 @@
  "done_days": [
   "2026-11-17",
   "2026-11-18",
-  "2026-11-19"
+  "2026-11-19",
+  "2026-11-20"
  ],
  "orders": {
   "2026-11-17": [
@@ -90,6 +91,38 @@
     "side": "BUY",
     "qty": 0.1532,
     "client_order_id": "14b1983bf5ec4ef0bd7e65bc87ffe16f"
+   }
+  ],
+  "2026-11-20": [
+   {
+    "symbol": "AXON",
+    "side": "BUY",
+    "qty": 0.01491,
+    "client_order_id": "bb69a06dbbac438897a1521fae281c7f"
+   },
+   {
+    "symbol": "GEN",
+    "side": "BUY",
+    "qty": 0.15942,
+    "client_order_id": "5a4f71ee61e94251b01003116ebab7e1"
+   },
+   {
+    "symbol": "FTNT",
+    "side": "BUY",
+    "qty": 0.03719,
+    "client_order_id": "1317d7c575f344b8a09ade668cd36aa4"
+   },
+   {
+    "symbol": "QLYS",
+    "side": "BUY",
+    "qty": 0.03783,
+    "client_order_id": "514cabcf4c3c42238bf60f21c3c8f7f5"
+   },
+   {
+    "symbol": "TENB",
+    "side": "BUY",
+    "qty": 0.16493,
+    "client_order_id": "85f650f2e3d24af8987436509ca44346"
    }
   ]
  },
