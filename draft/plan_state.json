@@ -127,5 +127,32 @@
   ]
  },
  "note": "2026-11-19: period shortened from 60 to 23 trading days (last day 2026-12-18) at the owner's request",
- "max_days": []
+ "max_days": [],
+ "extra": {
+  "2026-11-20": {
+   "note": "one-off extra buy before the close at the owner's request, about 25 dollars",
+   "orders": [
+    {
+     "symbol": "QLYS",
+     "qty": 0.03377
+    },
+    {
+     "symbol": "TENB",
+     "qty": 0.14892
+    },
+    {
+     "symbol": "GEN",
+     "qty": 0.143
+    },
+    {
+     "symbol": "FTNT",
+     "qty": 0.03357
+    },
+    {
+     "symbol": "AXON",
+     "qty": 0.0143
+    }
+   ]
+  }
+ }
 }
