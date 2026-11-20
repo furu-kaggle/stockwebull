@@ -101,6 +101,11 @@ def main():
     plain_daily = (cash + (shares * panels["prev_close"].loc[today]).sum()) / state["days"]
     plain_daily = min(plain_daily, DAILY_CAP_YEN / 2 / rate)
     orders = decide(today, cash, shares, days_left, plain_daily, panels, CORE, others, dict(CFG, prefer=PREFER, outside=OUTSIDE))
+    if today.date().isoformat() in state.get("max_days", []):     # days the owner asked to buy up to the daily cap
+        buys = sum(v for v in orders.values() if v > 0)
+        target = min(2 * plain_daily, cash)
+        if 0 < buys < target:
+            orders = {s: (v * target / buys if v > 0 else v) for s, v in orders.items()}
 
     # Size orders with the price trading right now; if the market has not traded today, it is closed.
     now_px, traded_days = latest_prices(data, CORE + [s for s in orders if s not in CORE])

@@ -126,5 +126,8 @@
    }
   ]
  },
- "note": "2026-11-19: period shortened from 60 to 23 trading days (last day 2026-12-18) at the owner's request"
+ "note": "2026-11-19: period shortened from 60 to 23 trading days (last day 2026-12-18) at the owner's request",
+ "max_days": [
+  "2026-11-23"
+ ]
 }
