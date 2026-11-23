@@ -33,8 +33,9 @@ def page(start, end, index):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--days", type=int, default=35)
+    parser.add_argument("--end", help="last day of the window, YYYY-MM-DD (default: now); NVD allows at most 120 days per query")
     args = parser.parse_args()
-    end = pd.Timestamp.now(tz="UTC")
+    end = pd.Timestamp(args.end, tz="UTC") + pd.Timedelta(hours=23, minutes=59, seconds=59) if args.end else pd.Timestamp.now(tz="UTC")
     start = (end - pd.Timedelta(days=args.days)).normalize()
     fmt = "%Y-%m-%dT%H:%M:%S.000Z"
     rows, index, total = [], 0, None
@@ -54,9 +55,13 @@ def main():
     df = pd.DataFrame(rows, columns=["date", "source", "severity"])
     daily = df.groupby("date").agg(total=("date", "size"), critical=("severity", lambda s: (s == "CRITICAL").sum()),
                                    high=("severity", lambda s: (s == "HIGH").sum()), scored=("severity", lambda s: s.notna().sum()))
-    daily.to_csv(os.path.join(HERE, "cve_daily.csv"))
-    df.to_csv(os.path.join(HERE, "cache", "cve_daily_raw.csv"), index=False)
-    print(daily.to_string())
+    path = os.path.join(HERE, "cve_daily.csv")
+    if os.path.exists(path):                                  # keep days fetched earlier that this window does not cover
+        old = pd.read_csv(path, index_col="date")
+        daily = pd.concat([old[~old.index.isin(daily.index)], daily]).sort_index()
+    daily.to_csv(path)
+    df.to_csv(os.path.join(HERE, "cache", f"cve_daily_raw_{start:%Y%m%d}.csv"), index=False)
+    print(daily.tail(5).to_string())
     print("total", total, "top sources", df.source.value_counts().head(8).to_dict())
 
 
