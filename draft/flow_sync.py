@@ -1,4 +1,4 @@
-"""Store the daily large / medium / small order flow for the security universe in D1 (table capital_flow).
+"""Store the daily large / medium / small order flow for the security and quantum names in D1 (table capital_flow).
 
 Webull only returns the last five trading days, so history exists only for the days this script has
 captured: run it at least once every five trading days to keep the record unbroken.
@@ -18,7 +18,9 @@ from universe import UNIVERSE
 
 
 def main():
-    symbols = sys.argv[1:] or [u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")] + ["CIBR"]
+    symbols = sys.argv[1:] or ([u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")] + ["CIBR"]
+                               + [u[0] for u in UNIVERSE if u[1] == "quantum" and u[2] in ("pure", "etf")]     # added 2026-11-25
+                               + ["AXON", "UI"])                                                            # bought or on the list outside the sector
     data, rows = DataClient(make_client()), []
     for sym in symbols:
         try:
