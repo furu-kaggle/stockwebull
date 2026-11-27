@@ -4,7 +4,8 @@ Plan: spend a fixed budget over `days` trading days, buying every day (60 at fir
   budget today   cash left / days left, times 2 when the core is cheap, times 0.5 when nothing is attractive
                  (never more than twice the plain daily amount)
   where it goes  80% to the two core names, 20% to the best other name; when a core name is rich the core
-                 share drops to 50% and up to three other names share the rest
+                 share drops to 50% and up to three other names share the rest. A core name that cannot be
+                 bought at all passes its half of the core share to the other names, not to its partner
   per name       cheap (P/S rank <= 20) counts 1.5, normal 1, rich (>= 80) 0.5, very rich (>= 95) 0;
                  nothing is bought in a name that is above its +1 sigma Bollinger band or jumped 15% in 5 days
   other names    must be growing and profitable where that is known; names in cfg["prefer"] first, then cheapest P/S rank
@@ -92,9 +93,11 @@ def decide(day, cash, shares, days_left, plain_daily, panels, core, others, cfg=
     pool = sorted(pool, key=lambda s: (s not in prefer, rank.get(s, 50) if not np.isnan(rank.get(s, np.nan)) else 50))[:cfg["max_others"] if core_rich else 1]
     weights = {}
     core_share = cfg["core_share_rich"] if core_rich else cfg["core_share"]
-    if sum(core_f.values()) > 0:
-        for s, f in core_f.items():
-            weights[s] = core_share * f / sum(core_f.values())
+    buyable = [s for s, f in core_f.items() if f > 0]
+    if buyable:                                                # a core name that cannot be bought gives its share to the other names, not to its partner
+        scale, total_f = len(buyable) / len(core), sum(core_f[s] for s in buyable)
+        for s in buyable:
+            weights[s] = core_share * scale * core_f[s] / total_f
     if pool:
         for s in pool:
             weights[s] = (1 - sum(weights.values())) / len(pool) if s == pool[0] else 0
