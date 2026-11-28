@@ -23,6 +23,9 @@ from plan_strategy import CFG, build_panels, decide
 from universe import UNIVERSE
 
 BASKET = {"SHV": 4.0, "NOC": 1.0, "GD": 1.0, "PEP": 1.0, "MCD": 1.0}
+# second version (after the owner's "that is almost cash"): no SHV; a stock that fails the check has its part kept back in cash
+STOCKS = ["NOC", "GD", "PEP", "MCD"]
+SWAPS = ["HII", "LHX"]                 # candidates to take GD's place (GD is in the top tenth of its own ten-year earnings multiple)
 SHARE = {80: 0.5, 95: 0.7}
 
 
@@ -31,7 +34,7 @@ def main():
     data, trade = DataClient(client), TradeClient(client)
     state = json.load(open(STATE))
     sector = [u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")]
-    with_figures, price_only = sector + EXTRA + OUTSIDE, list(BASKET)
+    with_figures, price_only = sector + EXTRA + OUTSIDE, list(BASKET) + SWAPS
     bars = fresh_bars(data, with_figures + price_only)
     day = bars["close"].index[-1] + pd.offsets.BDay(1)             # the next trading day: decided on the latest close
     for f in bars:
@@ -66,6 +69,9 @@ def main():
         "proposal: half outside while rich, basket, cap 1/3": (others, dict(CFG, prefer=PREFER, cap_other=1 / 3, outside_share=SHARE, **basket)),
         "same, without AXON as a place to move to": ([s for s in others if s != "AXON"], dict(CFG, prefer=[s for s in PREFER if s != "AXON"], cap_other=1 / 3, outside_share=SHARE, **basket)),
     }
+    no_axon, prefer = [s for s in others if s != "AXON"], [s for s in PREFER if s != "AXON"]
+    for label, names in [("second version: NOC, GD, PEP, MCD, a blocked part kept back", STOCKS)] + [(f"second version with {x} in place of GD", [x if s == "GD" else s for s in STOCKS]) for x in SWAPS]:
+        variants[label] = (no_axon, dict(CFG, prefer=prefer, cap_other=1 / 3, outside_share=SHARE, outside=names, set_aside=True))
     view = pd.DataFrame({"P/S rank": panels["rank"].loc[day], "above band": panels["above_band"].loc[day], "5d move%": panels["jump"].loc[day] * 100,
                          "quality ok": panels["quality"].loc[day]})
     pd.set_option("display.width", 200, "display.float_format", "{:.1f}".format)
@@ -73,11 +79,13 @@ def main():
     print(f"core average rank {panels['rank'].loc[day, CORE].mean():.1f}\n")
     print(view.loc[CORE + PREFER + ["FFIV", "UI"] + price_only].to_string(), "\n")
     for name, (pool, cfg) in variants.items():
-        orders = decide(day, cash, shares, days_left, plain_daily, panels, CORE, pool, cfg)
+        info = {}
+        orders = decide(day, cash, shares, days_left, plain_daily, panels, CORE, pool, cfg, info)
         total = sum(orders.values())
         line = "  ".join(f"{s} ${v:.2f} ({v / total * 100:.0f}%)" for s, v in sorted(orders.items(), key=lambda kv: -kv[1]))
         inside = sum(v for s, v in orders.items() if s in sector + EXTRA)
-        print(f"{name}\n   {line}\n   total ${total:.2f}; in the sector {inside / total * 100:.0f}%, outside {100 - inside / total * 100:.0f}%; {len(orders)} orders\n")
+        print(f"{name}\n   {line}\n   total ${total:.2f}; in the sector {inside / total * 100:.0f}%, outside {100 - inside / total * 100:.0f}%; {len(orders)} orders"
+              + (f"; kept back in cash ${info['aside']:.2f}" if info.get("aside") else "") + "\n")
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ from indicator_compare import as_of, trailing_rank
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "cache", "div_profile.pkl")
-STOCKS = {"defense": ["NOC", "LMT", "GD", "RTX"], "health": ["LLY", "AMGN", "MRK", "JNJ", "ABBV", "UNH"], "insurers": ["CB", "TRV", "PGR"],
+STOCKS = {"defense": ["NOC", "LMT", "GD", "RTX", "LHX", "HII"], "health": ["LLY", "AMGN", "MRK", "JNJ", "ABBV", "UNH"], "insurers": ["CB", "TRV", "PGR"],
           "staples": ["DG", "WMT", "COST", "KO", "PEP", "PG", "CL", "MO", "MCD"], "exchanges": ["CBOE", "CME"], "energy": ["XOM", "CVX"],
           "power": ["DUK", "SO", "NEE"], "waste": ["WM"], "now in the plan": ["UI", "AXON"], "core": ["QLYS", "TENB"]}
 FUNDS = {"SHV": "0-1 year Treasuries", "VGSH": "1-3 year Treasuries", "ITA": "defense fund", "XLV": "health fund", "XLP": "staples fund", "XLU": "utilities fund",
