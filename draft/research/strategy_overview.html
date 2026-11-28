@@ -1,0 +1,202 @@
+<title>積み立て戦略の全体像</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@700&display=swap">
+<style>
+/* layout: one reading column in the order a reviewer needs: purpose, the split of the money, the daily flow, the rules, how well each rule is backed, what is still open */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #171a1f; --muted: #5d6470; --line: #dde1e7;
+  --accent: #257de0; --sec: #257de0; --slot: #00a888; --warn-bg: #fff4e5; --warn-line: #f2a600;
+  --weak: #ec4647; --mid: #d28e05; --strong: #008a17;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-head: "Zen Kaku Gothic New", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14161a; --surface: #1c1f25; --fg: #eceef1; --muted: #9aa1ad; --line: #30353e;
+  --accent: #338ced; --sec: #338ced; --slot: #00b894; --warn-bg: #2b2415; --warn-line: #d28e05;
+  --weak: #eb6263; --mid: #f2a600; --strong: #0aac23; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14161a; --surface: #1c1f25; --fg: #eceef1; --muted: #9aa1ad; --line: #30353e;
+  --accent: #338ced; --sec: #338ced; --slot: #00b894; --warn-bg: #2b2415; --warn-line: #d28e05;
+  --weak: #eb6263; --mid: #f2a600; --strong: #0aac23; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.75;
+       padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px }
+main { max-width: 840px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px }
+header .date { color: var(--muted); font-size: 13px; letter-spacing: .04em }
+h1 { font-family: var(--font-head); font-size: 28px; line-height: 1.35; margin: 4px 0 8px; text-wrap: balance }
+h2 { font-family: var(--font-head); font-size: 20px; line-height: 1.4; margin: 0 0 12px; text-wrap: balance }
+h3 { font-size: 15px; margin: 18px 0 6px }
+p { margin: 0 0 10px; max-width: 43em }
+section { min-width: 0 }
+.lead { font-size: 16px }
+.note { color: var(--muted); font-size: 13px; max-width: 46em }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px }
+.ask { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 16px 20px }
+ol, ul { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px }
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+thead th { color: var(--muted); font-weight: 500; font-size: 12.5px; border-bottom: 1px solid var(--muted) }
+td:first-child { min-width: 9em }
+.split { display: grid; grid-template-columns: 5fr repeat(5, 1fr); gap: 3px; margin: 8px 0 6px }
+.split div { padding: 12px 6px; text-align: center; color: #fff; font-weight: 700; font-size: 13px; border-radius: 4px; min-width: 0; overflow-wrap: anywhere }
+.split .s { background: var(--sec) } .split .o { background: var(--slot) }
+.split small { display: block; font-weight: 400; font-size: 11.5px; opacity: .92 }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap }
+.tag.strong { color: var(--strong) } .tag.mid { color: var(--mid) } .tag.weak { color: var(--weak) }
+.steps { counter-reset: s; list-style: none; padding: 0; gap: 0 }
+.steps li { counter-increment: s; position: relative; padding: 8px 0 8px 44px; border-left: 2px solid var(--line); margin-left: 14px }
+.steps li::before { content: counter(s); position: absolute; left: -15px; top: 8px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700;
+                    display: grid; place-items: center; font-size: 13px }
+.steps b { display: block }
+code { font-size: 13px }
+</style>
+<main>
+<header>
+<div class="date">2026年11月28日（土）時点。月曜（日本時間 11月30日 23:47）の注文から、この形で動く</div>
+<h1>積み立て戦略の全体像</h1>
+<p class="lead">いま動いている決まりを、プログラムの中身どおりに1枚にまとめたもの。どこが決まっていて、どこがまだ決まっていないかを見るための地図です。</p>
+</header>
+
+<section class="box"><h2>ひとことで言うと</h2>
+<ol>
+<li>10万円を約1か月（23営業日）で、毎日少しずつ米国株に替える。</li>
+<li>お金の半分はセキュリティ株、残りは1割ずつ5つの別の業種に分ける。</li>
+<li>セキュリティ側は「割高なら減らす、上がりすぎは買わない」。別の5つは毎日同じ額を買う。</li>
+<li>売るのは、セキュリティ株が理由なく急騰したときだけ。</li>
+<li>注文は1日1回、プログラムが自動で出す。見張りの仕組みは知らせるだけで、売買はしない。</li>
+</ol></section>
+
+<section><h2>1. 目的と前提</h2>
+<div class="scroll"><table>
+<thead><tr><th>項目</th><th>中身</th></tr></thead>
+<tbody>
+<tr><td>ねらい</td><td>「AIで脆弱性の発見が急に増え、セキュリティ会社の需要が伸びる」という見立てに、少額で実際に乗って値動きを学ぶ</td></tr>
+<tr><td>金額と期間</td><td>約10万円（645ドル）。11月17日〜12月18日の23営業日。8日分は済み、残り15日</td></tr>
+<tr><td>いまの状態</td><td>投じた 214.01ドルが 229.70ドル（+7.33%）。残りの現金 413.53ドル</td></tr>
+<tr><td>持っている銘柄</td><td>QLYS、TENB、GEN、FTNT、FFIV、AXON（AXON はこれ以上買わない。売りもしない）</td></tr>
+<tr><td>口座の決まり</td><td>日本の Webull。端株の成行注文で、米国の通常の取引時間だけ約定する。手数料ゼロ。売った銘柄は同じ日に買い直さない</td></tr>
+</tbody></table></div></section>
+
+<section><h2>2. お金の分け方</h2>
+<p>残りの現金を、最初の注文の日に6つの「持ち分」に分ける。以後、それぞれの持ち分は別々に管理する。</p>
+<div class="split">
+<div class="s">セキュリティ 5割<small>206.76ドル</small></div>
+<div class="o">防衛<small>NOC</small></div><div class="o">外食<small>MCD</small></div><div class="o">飲料<small>PEP</small></div><div class="o">電力<small>NEE</small></div><div class="o">金<small>GLD</small></div>
+</div>
+<p class="note">5つの枠は各 41.35ドル。毎日、それぞれの持ち分を「残り ÷ 残り日数」だけ使う。買わなかった分はその持ち分に残り、翌日以降の1日あたりの額が少し増える。</p>
+</section>
+
+<section><h2>3. 毎日の流れ</h2>
+<ol class="steps">
+<li><b>日本時間 23:47（米国の取引開始の17分後）にプログラムが動く</b>前日の終値までのデータで、その日に何をいくら買うかを決める。</li>
+<li><b>セキュリティの持ち分：どの銘柄にいくら入れるかを決める</b>下の「4. セキュリティ側の決まり」のとおり。</li>
+<li><b>5つの枠：それぞれ同じ額を買う</b>月曜なら各 2.76ドル。5日で15%以上急騰した銘柄だけ、その日は見送る。</li>
+<li><b>注文を出す</b>いま取引されている値段で株数を決め、成行で出す。断られた注文は出し直さない。</li>
+<li><b>持ち分から引いて記録する</b>約定した分だけ、その持ち分から引く。</li>
+<li><b>日本時間 5:50（取引終了の前）に約定を確かめる</b>結果を報告する。</li>
+</ol>
+<p class="note">月曜の見込み：FFIV 9.19ドル、NOC・MCD・PEP・NEE・GLD に各 2.76ドル、合計 22.97ドル。セキュリティ側の 4.59ドルは持ち分に残る。</p>
+</section>
+
+<section><h2>4. セキュリティ側の決まり</h2>
+<p>対象はセキュリティ22銘柄。軸は QLYS と TENB（脆弱性を見つけて管理する会社）。それ以外の20銘柄は、軸が割高なときの「逃げ先」。</p>
+<h3>物差し：割安度の順位</h3>
+<p>株価が1株あたり売上の何倍かを、その銘柄自身の直近2年と比べた位置（0〜100）。いまは QLYS 97、TENB 88。</p>
+<div class="scroll"><table>
+<thead><tr><th>その銘柄の状態</th><th>扱い</th></tr></thead>
+<tbody>
+<tr><td>割安（順位20以下）</td><td>多めに買う（1.5倍の重み）</td></tr>
+<tr><td>普通（20〜80）</td><td>ふつうに買う</td></tr>
+<tr><td>割高（80〜95）</td><td>半分に減らす</td></tr>
+<tr><td>超割高（95以上）</td><td>買わない</td></tr>
+<tr><td>上がりすぎ（20日平均＋ばらつき1つ分より上、または5日で15%以上の上昇）</td><td>その日は買わない</td></tr>
+</tbody></table></div>
+<h3>配分</h3>
+<div class="scroll"><table>
+<thead><tr><th>軸の状態</th><th>軸2銘柄に</th><th>逃げ先に</th></tr></thead>
+<tbody>
+<tr><td>どちらも割高でない</td><td>8割</td><td>2割を1銘柄へ</td></tr>
+<tr><td>どちらかが割高か、買えない</td><td>5割</td><td>5割を最大3銘柄へ等分</td></tr>
+<tr><td>軸の片方が買えない</td><td colspan="2">その銘柄の分は相方に回さず、逃げ先へ回す</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>逃げ先の条件：</b>売上が年8%以上伸びていて、営業黒字。GEN と FTNT を優先し、あとは割安な順。</li>
+<li><b>1銘柄の上限：</b>軸以外の1銘柄は、1日全体の3分の1まで。超えた分は買わずにセキュリティの持ち分に残す。</li>
+<li><b>速さの調整：</b>軸が2銘柄とも割安なら、その日は2倍。軸が割高で逃げ先もないなら半分。</li>
+<li><b>何も買えない日：</b>軸のうち順位の低いほうを、半分の速さで買う（下の「見直したい点」の1番）。</li>
+<li><b>売り：</b>順位95以上、かつ50日平均から大きく上に離れ、直近5営業日に決算がない銘柄だけ。目安の配分を超えた分を売る。</li>
+</ul>
+</section>
+
+<section><h2>5. 5つの枠の決まり</h2>
+<div class="scroll"><table>
+<thead><tr><th>枠</th><th>銘柄</th><th>選んだ理由</th><th>心配な点</th></tr></thead>
+<tbody>
+<tr><td>防衛</td><td>NOC</td><td>過去7回の下落のうち5回で上昇。利益の18倍で、自分の過去10年の真ん中</td><td>選挙後の国防予算の削減</td></tr>
+<tr><td>外食</td><td>MCD</td><td>外食の中で唯一、下落時に下げにくい。割安度の順位25</td><td>やせ薬と消費の弱さ</td></tr>
+<tr><td>飲料</td><td>PEP</td><td>割安度の順位37、売上が上向き、取締役の大口買い</td><td>MCD と同じ心配ごと</td></tr>
+<tr><td>電力</td><td>NEE</td><td>利益の倍率が2年で最低圏。データセンター向けの需要</td><td>利上げに弱い。下落7回で上昇は3回</td></tr>
+<tr><td>金</td><td>GLD</td><td>ほかのどれとも動きが重ならない</td><td>利上げ局面で下げ続けている</td></tr>
+</tbody></table></div>
+<ul>
+<li>毎日、同じ額を買う。割安度や上がりすぎの判定は使わない（5日で15%以上の急騰だけ見送る）。</li>
+<li>売りの決まりはない。</li>
+<li>銘柄は固定。入れ替えの決まりはまだない。</li>
+</ul>
+</section>
+
+<section><h2>6. 動かすうえでの決まり</h2>
+<div class="scroll"><table>
+<thead><tr><th>決まり</th><th>中身</th></tr></thead>
+<tbody>
+<tr><td>注文の回数</td><td>1日1回、最大10件（セキュリティ側5件、5枠5件）</td></tr>
+<tr><td>1日の上限</td><td>9,000円（約58ドル）。ふだんは約4,300円</td></tr>
+<tr><td>買う対象</td><td>セキュリティ22銘柄と、5枠の5銘柄だけ</td></tr>
+<tr><td>断られた注文</td><td>出し直さない</td></tr>
+<tr><td>見張り</td><td>小口の注文の比率と、X の投稿の増え方を見る。知らせるだけで、売買はしない</td></tr>
+<tr><td>決まりの変更</td><td>相談して決めてから。プログラムは決まりどおりにしか動かない</td></tr>
+<tr><td>Webull との接続</td><td>12月1日ごろに期限が切れる。切れたらアプリで承認し直す必要がある</td></tr>
+</tbody></table></div></section>
+
+<section><h2>7. それぞれの決まりは、どれくらい確かめてあるか</h2>
+<div class="scroll"><table>
+<thead><tr><th>決まり</th><th>確かめ方</th><th>確かさ</th></tr></thead>
+<tbody>
+<tr><td>セキュリティを5割にする</td><td>16業種から5つ選ぶ4,368通りを13年分で比較。伸びは年1ポイントほどの差で、落ち込みがほぼ半分</td><td><span class="tag strong">強め</span></td></tr>
+<tr><td>割高なら減らす、超割高は買わない</td><td>QLYS は2013年、TENB は2020年までさかのぼった。割高の時期は15回</td><td><span class="tag mid">中くらい</span></td></tr>
+<tr><td>割安度の物差し（売上の倍率の2年順位）</td><td>10種類の物差しを同じ条件で比べて選んだ</td><td><span class="tag mid">中くらい</span></td></tr>
+<tr><td>上がりすぎは買わない（セキュリティ側）</td><td>2024年からの積み立て142本で、決まりあり・なしを比較</td><td><span class="tag mid">中くらい</span></td></tr>
+<tr><td>5枠は毎日買う</td><td>3,370例で、見送る決まりと比較。毎日買うほうが良かった</td><td><span class="tag mid">中くらい</span></td></tr>
+<tr><td>買う時刻（23:47）</td><td>30分ごとの値段で比較。時刻による差はなかった</td><td><span class="tag mid">中くらい</span></td></tr>
+<tr><td>5枠の銘柄</td><td>今の割高さ、X の話題、過去の下落での動き。あとから選んでいる</td><td><span class="tag weak">弱い</span></td></tr>
+<tr><td>軸を QLYS・TENB にする</td><td>脆弱性の件数（1日142件から564件へ）と X の話題。ただし株価にはすでに織り込まれている兆しがある</td><td><span class="tag weak">見立て</span></td></tr>
+<tr><td>逃げ先の条件（伸び8%以上・黒字）、1銘柄の上限、売りの条件</td><td>考え方で決めた。売りは一度も起きていない</td><td><span class="tag weak">未検証に近い</span></td></tr>
+</tbody></table></div>
+<p class="note">「5枠の銘柄」は確かさが弱いが、どの5つを選んでも結果はほとんど変わらなかった（落ち込みは -37%〜-43% の範囲）。効いているのは5割に下げたこと。</p>
+</section>
+
+<section class="ask"><h2>8. 見直したい点・まだ決まっていない点</h2>
+<ol>
+<li><b>何も買えない日の扱い。</b>いまは、セキュリティ側で買える銘柄が1つもない日に、軸のうち順位の低いほうを半分の速さで買う。割高でも上がりすぎでも買ってしまうので、「買わずに持ち分に残す」に変えるほうが、ほかの決まりと筋が合う。</li>
+<li><b>軸の前提。</b>QLYS はアナリスト目標を上回り、順位97。見立てが外れたと判断する条件（軸を替える、セキュリティの割合を下げる）が決まっていない。</li>
+<li><b>12月18日のあと。</b>翌月も続けるか、買い残しをどうするか、5割と1割の配分がずれたときに戻すか。</li>
+<li><b>5枠の売りと入れ替え。</b>売りの決まりも、銘柄を入れ替える条件も決まっていない。悪い知らせが出た銘柄を持ち続けることになる。</li>
+<li><b>軸が割安に戻ったとき。</b>セキュリティの割合を5割から上げるか。いつも5割だと、軸が割高でない時期は年1〜2ポイントの取り逃しになる。</li>
+<li><b>見張りの基準。</b>知らせを出す数字（小口の比率が何%、投稿が何倍）が決まっていない。</li>
+<li><b>途中の入金。</b>いまは全額がセキュリティの持ち分に入る。</li>
+<li><b>為替。</b>現金はドルに替えてある。円高になれば円で見た価値は減るが、決まりの対象外。</li>
+</ol>
+<p class="note">防げないと分かっていること：全部が売られる下げ（コロナ急落ではどの5枠でも -22%〜-28%）と、割高でない水準から始まるセキュリティの下げ（2025年7月〜2026年4月、軸が -50%）。</p>
+</section>
+
+<section><h2>9. どこに何があるか</h2>
+<div class="scroll"><table>
+<thead><tr><th>もの</th><th>場所</th></tr></thead>
+<tbody>
+<tr><td>注文を出すプログラム</td><td><code>draft/plan_live.py</code></td></tr>
+<tr><td>セキュリティ側の決まりの計算</td><td><code>draft/plan_strategy.py</code></td></tr>
+<tr><td>日数・持ち分・注文の記録</td><td><code>draft/plan_state.json</code></td></tr>
+<tr><td>研究の記録（段階1〜6、追加1〜9）</td><td><code>draft/research/diversification.md</code></td></tr>
+<tr><td>分散先の研究の報告</td><td><code>draft/research/diversification_report.html</code></td></tr>
+</tbody></table></div></section>
+</main>
