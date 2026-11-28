@@ -82,7 +82,7 @@ def signed(v, digits=1, unit="%"):
     return f"{v:.0f}{unit}" if unit == "件" else f"{v:+.{digits}f}{unit}"
 
 
-def bars(rows, scale=None, digits=1, unit="%", plain=False):
+def bars(rows, scale=None, digits=1, unit="%", plain=False, sign=True):
     """rows: (label, value, kind) with kind in '', 'dim'. One scale for the whole list; negatives grow left of the zero line."""
     lo, hi = min(0, min(v for _, v, _ in rows)), max(0, max(v for _, v, _ in rows))
     if scale:
@@ -94,7 +94,7 @@ def bars(rows, scale=None, digits=1, unit="%", plain=False):
         width = (abs(v) / (left if neg else right) * 100) if (left if neg else right) else 0
         bar = f'<div class="bar {"neg" if neg else kind}" style="width:{min(width, 100):.1f}%" title="{esc(label)} {signed(v, digits, unit)}"></div>'
         out.append(f'<div class="name">{esc(label)}</div><div class="track{" plain" if plain and left == 0 else ""}"><div class="l">{bar if neg else ""}</div><div class="r">{"" if neg else bar}</div></div>'
-                   f'<div class="val">{signed(v, digits, unit)}</div>')
+                   f'<div class="val">{signed(v, digits, unit) if sign else f"{v:.{digits}f}{unit}"}</div>')
     out.append("</div>")
     return "\n".join(out)
 
@@ -172,22 +172,17 @@ def main():
 <li><b>今週は +7.33%。</b>ただしセキュリティ株そのものが強かった週で、買い方の工夫による上乗せは小さい（軸の2銘柄を同じ日に半分ずつ買っただけで +6.82%）。</li>
 <li><b>軸の2銘柄は「割高」の水準。</b>過去13年、この水準に入ったあとの1年で2割近く下げたのは13回中5回。一方で、割高のまま倍になった時期もあるので、売る合図ではない。</li>
 <li><b>どの下落でも減らなかったのは短期の米国債だけ。</b>守りの株（防衛・食品など）は「ハイテクだけが売られる下げ」には効くが、「全部が売られる危機」では一緒に下げる。定番のコカ・コーラや P&amp;G は、今すでに軸と同じくらい割高。</li>
-<li><b>提案：軸が割高のあいだは、毎日の半分をセキュリティの外へ。</b>行き先は割高でない守りの株（NOC・GD・PEP・MCD）。その日に上がりすぎている銘柄の分は、買わずに現金のまま取っておく。平均の成績を年0.5ポイントほど下げるかわりに、割高で始めた場合の最悪を -63% から -24% にする「保険」。</li>
+<li><b>案：セキュリティ5割、残りを1割ずつ5つの枠へ。</b>枠は防衛（LHX）・外食（MCD）・たばこ（PM）・電力（NEE）・金（GLD）。2013年以降で確かめると、伸びは年1ポイントほどの差で、値動きの幅と落ち込みがほぼ半分になる。効果のほとんどは「5割に下げること」から来ていて、5枠に何を入れるかの差は小さい。</li>
 <li><b>米国の防衛株は「割安」ではなく「普通の値段に戻った」段階。</b>NOC は3月の高値のとき利益の26倍、今は18倍弱で、過去10年の真ん中。本当に割安だった2011〜13年は8〜10倍だった。</li>
 </ol></section>""")
 
-    F_PICK = "LHX に替える"
-    F_WHY = (f"GD は利益の倍率が2011年以降で下から{defense.loc['GD', 'pe_place_since_2011']:.0f}%の高さ。LHX は{defense.loc['LHX', 'pe_place_since_2011']:.0f}%で、"
-             f"売上の伸びが {profile.loc['LHX', 'growth_before']:.1f}% から {profile.loc['LHX', 'growth']:.1f}% に上向き")
     add("""<section class="ask"><h2>決めてほしいこと</h2>
 <p>月曜の注文（日本時間 11月30日 23:47）までに返事をください。返事がなければ、月曜は今の決まりのまま出します（FFIV に 27.57ドル全額）。</p>""" + table(
         ["決めること", "おすすめ", "理由"],
-        [["A. 軸が割高のあいだ、毎日の半分を外へ回す", "回す", "割高で始めたときの最悪が半分以下になる"],
-         ["B. 外の中身", "NOC・GD・PEP・MCD に等分。上がりすぎの銘柄の分は現金で取っておく", "短期国債（SHV）は現金とほぼ同じで、この金額だと利息は期間中20〜30セント"],
-         ["C. 軸以外の1銘柄は1日の3分の1まで", "入れる", "月曜のような1銘柄への集中を防ぐ"],
-         ["D. AXON を逃げ先から外す（持っている分はそのまま）", "外す", "過去7回の下落すべてで17〜56%下げた"],
-         ["E. UI を外の候補から外す", "外す", "+129% から -16% まで当たり外れが大きい"],
-         ["F. 外の4銘柄のうち GD を HII か LHX に替える", F_PICK, F_WHY]], kind="text") + "</section>")
+        [["A. セキュリティ5割、残りを1割ずつ5枠、の形にする", "する", "値動きの幅と落ち込みがほぼ半分になり、伸びの差は年1ポイントほど"],
+         ["B. 5枠の中身", "LHX・MCD・PM・NEE・GLD", "互いに似ていない、いま割高でない、業績が上向き。金に抵抗があれば PEP（飲料）に"],
+         ["C. セキュリティ側で、軸以外の1銘柄は1日全体の3分の1まで", "入れる", "月曜のような1銘柄への集中を防ぐ"],
+         ["D. AXON と UI を買い付けの対象から外す（持っている分はそのまま）", "外す", "AXON は過去7回の下落すべてで17〜56%下げた。UI は当たり外れが大きい"]], kind="text") + "</section>")
 
     add('<section><h2>今週の成績</h2><p>投じた 214.01ドルが、11月27日の終値で 229.70ドル（+15.70ドル）。同じ金額を同じ時刻に別の買い方をした場合と比べます。</p>'
         '<div class="pair"><div><p class="cap">同じ日・同じ金額で買った場合の成績</p>' + bars(week, plain=True) +
@@ -223,7 +218,7 @@ def main():
         '<p class="note">しきい値や割合を動かしても結果はなだらかに変わるだけで、特定の数字にたまたま合っているわけではない。全体の最悪 -43.9% はどの決まりでも変わらない。'
         "これは割高でない水準から始まった下げ（2025年7月〜2026年4月）で、割高さを見る決まりでは防げない。出所：<code>draft/diversify_rule.py</code></p></section>")
 
-    add('<section><h2>分散先の候補は、今どれくらい割高か</h2><p>軸と同じ物差し（その銘柄自身の直近2年の中での位置）で並べたもの。80以上を「割高」としている。</p>' + bars(rich_now, scale=(0, 100), digits=0, unit="", plain=True) +
+    add('<section><h2>分散先の候補は、今どれくらい割高か</h2><p>軸と同じ物差し（その銘柄自身の直近2年の中での位置）で並べたもの。80以上を「割高」としている。</p>' + bars(rich_now, scale=(0, 100), digits=0, unit="", plain=True, sign=False) +
         '<div class="legend"><span><i style="background:var(--series)"></i>80以上（割高）</span><span><i style="background:var(--dim)"></i>80未満</span></div>'
         '<p class="note">生活必需品・製薬・保険の大手は、この1年で30〜40%上がり、軸と同じ水準まで買われている。アナリスト目標が株価より下の銘柄も多い（アムジェン -7.0%、トラベラーズ -7.5%）。'
         "ただし守りの株35銘柄で確かめると、割高なものもその後1年は平均 +14%（割安なものは +18.6%）。割高だから危ない、とまでは言えず、選ぶときの優先順位に使う程度。"
@@ -268,24 +263,58 @@ def main():
         ["下落の時期", "軸", "守りの株", "投資信託", "SHV", "UI", "AXON", "QQQ"],
         [[w[0]] + [heat(v) for v in w[1:]] for w in windows], kind="tight") +
         '<p class="note">軸は QLYS と TENB、守りの株は NOC・GD・PEP・MCD・PGR、投資信託は防衛・ヘルスケア・生活必需品・電力の4本、SHV は短期国債、QQQ はナスダック100。色は青が値上がり、赤が値下がり。AXON は7回すべてで17〜56%下げ、うち5回は軸より大きく下げた。守りの株と投資信託は、コロナ急落では軸より大きく下げた。全部の回で減らなかったのは短期国債だけ。</p>'
-        "<h3>60年分の業種データ：ソフトウェアが25%以上下げた12回で、上がっていた割合</h3>" + bars(rose_rows, scale=(0, 100), digits=0, plain=True) +
+        "<h3>60年分の業種データ：ソフトウェアが25%以上下げた12回で、上がっていた割合</h3>" + bars(rose_rows, scale=(0, 100), digits=0, plain=True, sign=False) +
         '<p class="note">セキュリティという業種はデータにないので、ソフトウェアで代用。ソフトウェアが大きく下げるとき、市場全体も6回に5回は下げている。防衛は 2000〜02年と 2021〜22年に大きく上げたが、2008年は -41%。'
         "外食は12回中1回しか上がっていない（マクドナルドは外食の中では例外的に下げにくい）。出所：<code>draft/diversify_longrun.py</code></p></section>")
 
-    add('<section><h2>提案する決まりと、月曜の注文</h2><div class="box"><ol>'
-        "<li><b>外へ回す割合を、軸の状態で決める。</b>軸2銘柄の順位の平均が80未満なら 0（今と同じ）、80以上なら毎日の半分、95以上なら7割。今は 92.7 なので半分。</li>"
-        "<li><b>外の中身。</b>NOC・GD・PEP・MCD に等分。その日に「上がりすぎ」の判定にかかった銘柄の分は買わず、現金のまま別枠で取っておく（翌日以降の買い付けには戻さない）。</li>"
-        "<li><b>1銘柄の上限。</b>軸以外の1銘柄は1日の3分の1まで。超える分は外へ。</li>"
-        "<li><b>AXON と UI を逃げ先から外す。</b>持っている分は売らない。</li>"
-        "<li>取っておいた現金の使い道は、3か月後の見直しで決める。まとまった額（目安1,000ドル以上）になっていれば短期国債（SHV）に移す。</li></ol></div>"
-        '<p class="note">11月28日の午前に出した第1版は「外の半分を SHV に」だった。SHV は現金とほぼ変わらないという指摘を受けて、上の形に直した。</p>'
-        "<h3>月曜（米国 11月30日）の注文の試算</h3><p>11月27日の終値で判定、1日 27.57ドル。QLYS は順位97で買わない、TENB・GEN・FTNT は上がりすぎの判定、AXON は5日で +18%。セキュリティの中で買えるのは FFIV だけ。</p>" + table(
-            ["決まり", "注文", "買わずに取っておく分"],
-            [["今のまま", "FFIV 27.57ドル", "なし"], ["今の決まり＋1銘柄の上限（超過は UI へ）", "UI 18.38ドル、FFIV 9.19ドル", "なし"],
-             ["提案", "FFIV 9.19ドル、GD 4.59ドル", "13.78ドル"], ["提案で GD を HII に替えた場合", "FFIV 9.19ドル、HII 4.59ドル", "13.78ドル"],
-             ["提案で GD を LHX に替えた場合", "FFIV 9.19ドル、LHX 4.59ドル", "13.78ドル"]], pick=2, kind="text") +
-        '<p class="note">外へ回る67%（半分と、FFIV の上限を超えた分）を4銘柄に等分すると1銘柄 4.59ドル。NOC・PEP・MCD は上がりすぎの判定にかかるので、3銘柄分の 13.78ドルは買わずに取っておく。全体が大きく上げた直後なので、月曜は取っておく分が多い。'
-        "決まりの計算にはこの切り替えを入れてあるが、初期値はオフで、本番の注文は変えていない。出所：<code>draft/diversify_preview.py</code></p></section>")
+    # ---- half in security, five slots of 10% (draft/lineup.py, draft/lineup_preview.py)
+    combos = pd.read_csv(os.path.join(CACHE, "lineup_all.csv"))
+    kinds_alone = pd.read_csv(os.path.join(CACHE, "lineup_kinds.csv"), index_col=0)
+    kind_cols = ["level_0", "level_1", "level_2", "level_3", "level_4"]
+    kind_ja = {"restaurants": "外食", "gold": "金", "tobacco": "たばこ", "drug makers": "製薬", "power": "電力", "7-10 year Treasuries": "7〜10年の米国債", "insurance": "保険", "retail": "小売",
+               "waste": "ごみ処理", "drinks and food": "飲料・食品", "exchanges": "取引所", "defense": "防衛", "household goods": "日用品", "telecom": "通信", "health insurer": "医療保険", "oil": "石油"}
+    best = combos.head(len(combos) // 20)                              # the file is sorted by the combined rank
+    freq = pd.Series({k: best[kind_cols].eq(k).any(axis=1).mean() * 100 for k in kind_ja}).sort_values(ascending=False)
+    freq_rows = [(kind_ja[k], v, "" if v >= 5 / 16 * 100 else "dim") for k, v in freq.items()]
+    mid = combos[["growth", "swing", "deepest", "falls_avg"]].median()
+    core_row = kinds_alone.loc["core"]
+    shape_rows = [["セキュリティの軸だけ", signed(core_row.growth), f"{core_row.swing:.0f}%", signed(core_row.deepest), signed(core_row.falls_avg)],
+                  ["軸5割＋5枠（4,368通りの真ん中）", signed(mid.growth), f"{mid.swing:.0f}%", signed(mid.deepest), signed(mid.falls_avg)],
+                  ["いちばん良い組み合わせ", signed(combos.growth.max()), f"{combos.swing.min():.0f}%", signed(combos.deepest.max()), signed(combos.falls_avg.max())],
+                  ["いちばん悪い組み合わせ", signed(combos.growth.min()), f"{combos.swing.max():.0f}%", signed(combos.deepest.min()), signed(combos.falls_avg.min())]]
+
+    def pick(kind, sym, note):
+        r = profile.loc[sym]
+        return [kind, sym, f"{r.ps_rank:.0f}", f"{r.growth_before:.1f}% から {r.growth:.1f}%", signed(r.target_gap, 0), signed(r.from_high, 0), note]
+    gld = profile.loc["GLD"]
+    pick_rows = [pick("防衛", "LHX", "10月の決算は予想を上回り、受注残は過去最高。8月に社長が急に交代し、長期の目標を引き下げた"),
+                 pick("外食", "MCD", "消費の弱さとやせ薬の影響の懸念で、10月に1年の安値"),
+                 pick("たばこ", "PM", "加熱式たばこが伸びている。米国の口に含むたばこ（ZYN）を守るための出費で、利益の伸びは控えめの見通し"),
+                 pick("電力", "NEE", "データセンター向けの電力需要が追い風。借金が多く、利上げに弱い"),
+                 ["金", "GLD", "－", "－", "－", signed(gld.from_high, 0), "1月の最高値から3割強の下げ。ドル高と利上げ観測が理由。ほかの枠と動きが重ならない"]]
+    add('<section><h2>セキュリティ5割、残りを1割ずつ5つの枠へ</h2><p>枠の種類を16用意し、そこから5つを選ぶ4,368通りすべてについて、'
+        "「軸5割＋5枠を1割ずつ、毎日配分を戻す」を2013年から計算した。</p>" + table(
+            ["", "年あたりの伸び", "1年の値動きの幅", "いちばん深い落ち込み", "7回の下落の平均"], shape_rows) +
+        '<p class="note">5割に下げると、伸びは年1ポイントほどの差で、値動きの幅と落ち込みがほぼ半分になる。5枠の中身を替えても、落ち込みは -37%〜-43% の範囲にしかならない。'
+        "軸の値動き（年43%）が、ほかの枠（年16〜20%）よりずっと大きいから。全面安（コロナ）ではどの5枠でも -22%〜-28% で、軸だけ（-24.5%）と変わらない。</p>"
+        '<p class="cap">成績が上位5%だった組み合わせに、その枠が入っていた割合</p>' + bars(freq_rows, scale=(0, 100), digits=0, plain=True, sign=False) +
+        '<div class="legend"><span><i style="background:var(--series)"></i>偶然（31%）より多い</span><span><i style="background:var(--dim)"></i>偶然より少ない</span></div>'
+        '<p class="note">外食はマクドナルド1社だけの結果なので割り引いて見る。金と国債は、ほかのどの枠とも動きが重ならない。防衛は2018年秋とコロナで軸と一緒に下げたので中くらい。'
+        "ただ1割なら全体への影響は小さい。出所：<code>draft/lineup.py</code></p>"
+        "<h3>5つの枠と、いま選ぶ銘柄</h3>" + table(["枠", "銘柄", "割安度の順位（80以上が割高）", "売上の伸び（前の年から直近）", "アナリスト目標まで", "1年の高値から", "直近の様子"], pick_rows, kind="text") +
+        '<p class="note">この5枠で計算すると、年あたりの伸び +19.4%、いちばん深い落ち込み -38.7%。製薬と保険は枠としては良いが、割高でない銘柄が見当たらない（製薬大手は順位87〜100、'
+        "LLY は利益の45倍、PGR は伸びが鈍っている）。どれも日本の Webull で端株で買える。</p>"
+        "<h3>動かし方と、月曜（米国 11月30日）の注文</h3><div class=\"box\"><ol>"
+        "<li>積み立ての残りの現金を、セキュリティ用に5割、5つの枠に1割ずつ、あらかじめ分けておく。</li>"
+        "<li>毎日、それぞれの持ち分を残り日数で割った額だけ買う。</li>"
+        "<li>セキュリティ側の行き先は今の決まりのまま（軸の QLYS・TENB、割高なら別のセキュリティ銘柄）。軸以外の1銘柄は1日全体の3分の1まで。</li>"
+        "<li>その日に上がりすぎの判定にかかった銘柄は買わず、そのお金は持ち分に残して翌日以降に回す。</li></ol></div>" + table(
+            ["決まり", "注文", "買わずに持ち分へ残る分"],
+            [["今のまま", "FFIV 27.57ドル", "なし"],
+             ["セキュリティ5割＋5枠", "FFIV 9.19ドル、LHX・PM・NEE・GLD に各 2.76ドル", "セキュリティ側 4.59ドル、MCD の枠 2.76ドル"]], pick=1, kind="text") +
+        '<p class="note">11月27日の終値で判定、1日 27.57ドル。セキュリティ側で買えるのが FFIV だけなのは、QLYS が順位97で買わない水準、TENB・GEN・FTNT が今週の急騰で上がりすぎの判定にかかっているため。'
+        "MCD も同じ判定で月曜は見送り。この研究の前半で出した案（軸が割高のあいだだけ半分を外へ、行き先は NOC・GD・PEP・MCD）は、この形に置きかえた。"
+        "本番の注文はまだ変えていない。出所：<code>draft/lineup_preview.py</code></p></section>")
 
     add("""<section><h2>この研究の弱いところ</h2><div class="box"><ul>
 <li><b>例が少ない。</b>軸が割高だった時期は15回。TENB も入っているのは2020年以降だけ。</li>
@@ -295,6 +324,9 @@ def main():
 <li><b>割合に強い根拠はない。</b>半分・7割は目安。上げるほど落ち込みは減り、上昇の取り分も減る。</li>
 <li><b>期間が短い。</b>今回の積み立ては残り15営業日。この研究が見ているのは半年〜1年先で、12月18日までの値動きについては何も言えない。</li>
 </ul></div><p class="note">くわしい記録は <code>draft/research/diversification.md</code>。</p></section>""")
+
+    shape = next(i for i, part in enumerate(parts) if "<h2>セキュリティ5割、残りを1割ずつ5つの枠へ</h2>" in part)
+    parts.insert(3, parts.pop(shape))                                # the shape under decision comes right after the questions
 
     page = ('<title>セキュリティ株の分散先</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@700&display=swap">\n'
