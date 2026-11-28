@@ -8,6 +8,8 @@ How the shape would run (research/diversification.md, "追加6" and "追加7"):
   slot pots      one company or fund each; a slot that fails the band / jump check waits, and its pot catches
                  up on later days
 
+The live runner (plan_live.py) now does the same thing; this stays as the stand-alone preview.
+
 Usage: python draft/lineup_preview.py
 """
 import json
@@ -18,13 +20,11 @@ from webull.data.data_client import DataClient
 from webull.trade.trade_client import TradeClient
 
 from _client import make_client
-from plan_live import CORE, DAILY_CAP_YEN, EXTRA, PREFER, STATE, fresh_bars
+from plan_live import CORE, DAILY_CAP_YEN, EXTRA, PREFER, SECURITY_SHARE, SLOTS, STATE, fresh_bars
 from plan_strategy import CFG, build_panels, decide
 from universe import UNIVERSE
 
-SLOTS = {"LHX": "defense", "MCD": "restaurants", "PM": "tobacco", "NEE": "power", "GLD": "gold"}
-SECURITY_SHARE = 0.5
-DROP = ["AXON"]                      # no longer a place to move to (it fell 17-56% in every past sell-off)
+DROP = ["AXON"]                      # no longer a place to move to (already out of plan_live.EXTRA)
 
 
 def main():

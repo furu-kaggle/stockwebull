@@ -4,6 +4,10 @@ Without --live nothing is sent: the script prints what it would do (a dry run).
 State (start date, plan length, yen-to-dollar assumption) lives in draft/plan_state.json.
 Buys are market orders for a fractional quantity, which only fill in the regular session.
 
+From 2026-11-30 the plan's cash is held in pots: half for security (the rules in plan_strategy decide where it
+goes) and 10% for each of five other slots (one company or fund each). Every day each pot spends its own cash
+divided by the days left; a name that fails the band / jump check waits and its pot catches up later.
+
 Usage: python draft/plan_live.py [--live] [--status]
 """
 import argparse
@@ -24,9 +28,13 @@ from universe import UNIVERSE
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(HERE, "plan_state.json")
 CORE = ["QLYS", "TENB"]
-EXTRA = ["AXON"]                      # outside the 22 security names; added 2026-11-19 as a place to move to
-OUTSIDE = ["UI"]                      # other sectors; used only when nothing in the list above qualifies
-PREFER = ["GEN", "FTNT", "AXON"]      # where to go first when the core is rich (results improving, multiple still low)
+EXTRA = []                            # AXON was here from 2026-11-19 to 11-27; dropped as a place to move to (it fell 17-56% in every past sell-off)
+PREFER = ["GEN", "FTNT"]              # where to go first when the core is rich (results improving, multiple still low)
+# The owner's shape from 2026-11-30: half of the plan's cash for security, and five other slots of 10% each.
+# The cash is divided once into pots (state["pots"]); every day each pot spends its own cash / days left.
+SECURITY_SHARE = 0.5
+SLOTS = {"NOC": "defense", "MCD": "restaurants", "PEP": "drinks", "NEE": "power", "GLD": "gold"}   # chosen 2026-11-28 (research/diversification.md, 追加8)
+CAP_OTHER = 1 / 3                     # the largest share of the whole day that one security name outside the core may take
 DAILY_CAP_YEN = 9000                  # twice the plain daily amount; raised from 3,300 when the period was cut to one month (2026-11-19)
 
 
@@ -64,8 +72,9 @@ def main():
     state = json.load(open(STATE)) if os.path.exists(STATE) else {"start": None, "days": 60, "yen_per_dollar": 155.0, "done_days": []}
     client = make_client()
     data, trade = DataClient(client), TradeClient(client)
-    symbols = [u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")] + EXTRA + OUTSIDE
-    others = [s for s in symbols if s not in CORE + OUTSIDE]
+    symbols = [u[0] for u in UNIVERSE if u[1] == "security" and u[2] in ("pure", "mixed")] + EXTRA
+    others = [s for s in symbols if s not in CORE]
+    slots = list(SLOTS)
 
     account = trade.account_v2.get_account_list().json()[0]["account_id"]
     now_et = pd.Timestamp.now(tz="America/New_York")
@@ -81,11 +90,15 @@ def main():
         print(f"It is {now_et:%Y-%m-%d %H:%M} in New York: outside the regular session, so nothing is sent.")
         return
 
-    bars = fresh_bars(data, symbols)
+    bars = fresh_bars(data, symbols + slots)
     for f in bars:                                             # add a row for today so that "known at the previous close" lines up
         if bars[f].index[-1] < today:
             bars[f].loc[today] = np.nan
-    panels = build_panels(symbols, bars=bars)
+    panels = build_panels(symbols, bars={f: bars[f][symbols] for f in bars})
+    slot_close = bars["close"][slots]                          # the slots are checked on price alone: not above the band, no 15% jump in five days
+    slot_band = (slot_close > slot_close.rolling(20).mean() + slot_close.rolling(20).std()).shift(1).loc[today].fillna(False)
+    slot_jump = (slot_close / slot_close.shift(5) - 1).shift(1).loc[today]
+    slot_wait = slot_band | (slot_jump >= CFG["jump"])
 
     balance = trade.account_v2.get_account_balance(account).json()
     cur = {c["currency"]: c for c in balance.get("account_currency_assets", [])}
@@ -98,9 +111,19 @@ def main():
             shares[pos["symbol"]] = float(pos.get("quantity", pos.get("qty", 0)) or 0)
 
     days_left = state["days"] - len(state["done_days"])
-    plain_daily = (cash + (shares * panels["prev_close"].loc[today]).sum()) / state["days"]
-    plain_daily = min(plain_daily, DAILY_CAP_YEN / 2 / rate)
-    orders = decide(today, cash, shares, days_left, plain_daily, panels, CORE, others, dict(CFG, prefer=PREFER, outside=OUTSIDE))
+    held = sum(float(pos.get("market_value") or 0) for pos in positions)       # everything the plan has bought, slots and earlier names included
+    plain_daily = min((cash + held) / state["days"], DAILY_CAP_YEN / 2 / rate)
+    pots = dict(state.get("pots") or {})
+    if set(pots) != {"security", *slots}:                      # first day of the shape, or the slots changed: divide the cash afresh
+        pots = {"security": cash * SECURITY_SHARE, **{s: cash * (1 - SECURITY_SHARE) / len(slots) for s in slots}}
+    pots = {k: max(v, 0.0) for k, v in pots.items()}
+    pots["security"] = max(pots["security"] + cash - sum(pots.values()), 0.0)     # fills land a few cents off the estimate; security absorbs the difference
+    orders = decide(today, pots["security"], shares, days_left, plain_daily * SECURITY_SHARE, panels, CORE, others,
+                    dict(CFG, prefer=PREFER, cap_other=CAP_OTHER / SECURITY_SHARE))
+    for s in slots:                                            # a slot that fails the check waits; its pot catches up on later days
+        amount = min(pots[s] / max(days_left, 1), pots[s])
+        if not slot_wait[s] and amount >= CFG["min_order"]:
+            orders[s] = amount
     if today.date().isoformat() in state.get("max_days", []):     # days the owner asked to buy up to the daily cap
         buys = sum(v for v in orders.values() if v > 0)
         target = min(2 * plain_daily, cash)
@@ -112,13 +135,14 @@ def main():
     if args.live and today.date() not in traded_days:
         print(f"No trades today ({today.date()}) in {', '.join(CORE)}: the market looks closed, so nothing is sent.")
         return
-    last = now_px.reindex(symbols).fillna(panels["prev_close"].loc[today])
+    last = now_px.reindex(symbols + slots).fillna(pd.concat([panels["prev_close"].loc[today], slot_close.shift(1).loc[today]]))
     print(f"{today.date()}  day {len(state['done_days']) + 1} of {state['days']}   cash ${cash:,.2f} (yen at {rate:.0f}/$)   plain daily ${plain_daily:.2f}"
           f"   prices as of {bars['close'].dropna(how='all').index[-1].date()}")
     view = pd.DataFrame({"P/S rank": panels["rank"].loc[today], "50d z": panels["z50"].loc[today], "above band": panels["above_band"].loc[today],
                          "5d move%": panels["jump"].loc[today] * 100, "quality ok": panels["quality"].loc[today]})
     pd.set_option("display.width", 200, "display.float_format", "{:.1f}".format)
-    print(view.loc[CORE + [s for s in orders if s not in CORE]].to_string())
+    print(view.loc[CORE + [s for s in orders if s not in CORE and s not in SLOTS]].to_string())
+    print("pots: " + ", ".join(f"{k} ${v:.2f}" for k, v in pots.items()) + ";  slots waiting today: " + (", ".join(s for s in slots if slot_wait[s]) or "none"))
     total, sent, failed = 0.0, [], []
     for sym, amount in sorted(orders.items(), key=lambda kv: kv[1]):      # sells first
         side = "BUY" if amount > 0 else "SELL"
@@ -135,6 +159,8 @@ def main():
                 resp = trade.order_v3.place_order(account, [order])
                 print("    sent:", resp.status_code, json.dumps(resp.json(), ensure_ascii=False)[:200])
                 sent.append({"symbol": sym, "side": side, "qty": qty, "client_order_id": order["client_order_id"]})
+                pot = sym if sym in SLOTS else "security"
+                pots[pot] += (-1 if side == "BUY" else 1) * qty * last[sym]
             except Exception as err:                              # one refusal must not stop the other orders
                 print("    REFUSED:", str(err).split("RequestID")[0][:240])
                 failed.append(sym)
@@ -145,6 +171,7 @@ def main():
             state["start"] = state["start"] or today.date().isoformat()
             state["done_days"].append(today.date().isoformat())
             state.setdefault("orders", {})[today.date().isoformat()] = sent
+            state["pots"] = {k: round(v, 4) for k, v in pots.items()}
             json.dump(state, open(STATE, "w"), indent=1)
 
 

@@ -1,4 +1,5 @@
-"""What the next trading day's orders would be under the live rules and under the proposed ones. Sends nothing.
+"""What the next trading day's orders would be under the rules live until 2026-11-27 and under the first proposals. Sends nothing.
+(Superseded by lineup_preview.py and the pots in plan_live.py; kept as the record of that comparison.)
 
 The proposals (research/diversification.md, stage 5):
   cap        one name outside the core takes at most a third of the day; the part above it goes outside the sector
@@ -18,10 +19,12 @@ from webull.data.data_client import DataClient
 from webull.trade.trade_client import TradeClient
 
 from _client import make_client
-from plan_live import CORE, DAILY_CAP_YEN, EXTRA, OUTSIDE, PREFER, STATE, fresh_bars
+from plan_live import CORE, DAILY_CAP_YEN, STATE, fresh_bars
 from plan_strategy import CFG, build_panels, decide
 from universe import UNIVERSE
 
+# The live rules as they stood until 2026-11-27, which this script compares the proposals with.
+EXTRA, OUTSIDE, PREFER = ["AXON"], ["UI"], ["GEN", "FTNT", "AXON"]
 BASKET = {"SHV": 4.0, "NOC": 1.0, "GD": 1.0, "PEP": 1.0, "MCD": 1.0}
 # second version (after the owner's "that is almost cash"): no SHV; a stock that fails the check has its part kept back in cash
 STOCKS = ["NOC", "GD", "PEP", "MCD"]
