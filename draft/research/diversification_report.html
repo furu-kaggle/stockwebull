@@ -1,0 +1,158 @@
+<title>セキュリティ株の分散先</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@700&display=swap">
+<style>
+/* layout: one reading column; conclusions and decisions first, evidence after; charts are bar lists drawn to one scale each */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #171a1f; --muted: #5d6470; --line: #dde1e7;
+  --accent: #257de0; --series: #257de0; --dim: #b9c0cb; --neg: #ec4647; --warn-bg: #fff4e5; --warn-line: #f2a600;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --font-head: "Zen Kaku Gothic New", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14161a; --surface: #1c1f25; --fg: #eceef1; --muted: #9aa1ad; --line: #30353e;
+  --accent: #338ced; --series: #338ced; --dim: #4b525e; --neg: #eb6263; --warn-bg: #2b2415; --warn-line: #d28e05; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14161a; --surface: #1c1f25; --fg: #eceef1; --muted: #9aa1ad; --line: #30353e;
+  --accent: #338ced; --series: #338ced; --dim: #4b525e; --neg: #eb6263; --warn-bg: #2b2415; --warn-line: #d28e05; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.75;
+       padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px }
+main { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px }
+header .date { color: var(--muted); font-size: 13px; letter-spacing: .04em }
+h1 { font-family: var(--font-head); font-size: 28px; line-height: 1.35; margin: 4px 0 8px; text-wrap: balance }
+h2 { font-family: var(--font-head); font-size: 20px; line-height: 1.4; margin: 0 0 12px; text-wrap: balance }
+h3 { font-size: 15px; margin: 20px 0 6px }
+p { margin: 0 0 10px; max-width: 42em }
+section { min-width: 0 }
+.lead { font-size: 16px }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px }
+.box ol, .box ul { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px }
+.ask { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 18px 20px }
+.ask table { margin-top: 8px }
+.note { color: var(--muted); font-size: 13px; max-width: 46em }
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px }
+th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap }
+th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 9em }
+thead th { color: var(--muted); font-weight: 500; font-size: 12.5px; border-bottom: 1px solid var(--muted) }
+td.heat { color: var(--fg) }
+tr.pick td { font-weight: 700 }
+table.text th, table.text td { text-align: left; white-space: normal; vertical-align: top }
+table.text td:first-child { min-width: 11em }
+table.tight th, table.tight td { padding: 6px 7px }
+table.tight td:first-child { min-width: 10em; font-size: 13px }
+.bars { display: grid; grid-template-columns: minmax(6.5em, 15em) minmax(0, 1fr) 4.2em; gap: 7px 12px; align-items: center; font-size: 14px; font-variant-numeric: tabular-nums }
+.bars .name { min-width: 0 }
+.bars .val { text-align: right }
+.track { height: 14px; display: grid; grid-template-columns: var(--left, 0fr) var(--right, 1fr) }
+.track .l { display: flex; justify-content: flex-end; border-right: 1px solid var(--muted) }
+.track .r { display: flex }
+.track.plain .l { border-right: 0 }
+.bar { height: 14px; background: var(--series); border-radius: 0 4px 4px 0; min-width: 2px }
+.bar.dim { background: var(--dim) }
+.bar.neg { background: var(--neg); border-radius: 4px 0 0 4px }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px 28px }
+.pair > div { min-width: 0 }
+.cap { font-weight: 700; margin: 0 0 8px; font-size: 14px }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-size: 12.5px; margin-top: 8px }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px }
+code { font-size: 13px }
+</style>
+<main>
+<header><div class="date">2026年11月28日（土）時点・研究の途中経過（締め切りは11月29日 12時）</div>
+<h1>セキュリティ株の分散先</h1>
+<p class="lead">今週の成績の振り返りと、「機関投資家はもう織り込んでいそう」という見方を受けた、セキュリティ以外の置き場の研究です。</p></header>
+<section class="box"><h2>先に結論</h2><ol>
+<li><b>今週は +7.33%。</b>ただしセキュリティ株そのものが強かった週で、買い方の工夫による上乗せは小さい（軸の2銘柄を同じ日に半分ずつ買っただけで +6.82%）。</li>
+<li><b>軸の2銘柄は「割高」の水準。</b>過去13年、この水準に入ったあとの1年で2割近く下げたのは13回中5回。一方で、割高のまま倍になった時期もあるので、売る合図ではない。</li>
+<li><b>どの下落でも減らなかったのは短期の米国債だけ。</b>守りの株（防衛・食品など）は「ハイテクだけが売られる下げ」には効くが、「全部が売られる危機」では一緒に下げる。定番のコカ・コーラや P&amp;G は、今すでに軸と同じくらい割高。</li>
+<li><b>提案：軸が割高のあいだは、毎日の半分をセキュリティの外へ。</b>外の半分は短期国債（SHV）、残りは割高でない守りの株（NOC・GD・PEP・MCD）。平均の成績を年0.5ポイントほど下げるかわりに、割高で始めた場合の最悪を -63% から -24% にする「保険」。</li>
+</ol></section>
+<section class="ask"><h2>決めてほしいこと</h2>
+<p>月曜の注文（日本時間 11月30日 23:47）までに返事をください。返事がなければ、月曜は今の決まりのまま出します（FFIV に 27.57ドル全額）。</p><div class="scroll"><table class="text"><thead><tr><th>決めること</th><th>おすすめ</th><th>理由</th></tr></thead><tbody><tr><td>A. 軸が割高のあいだ、毎日の半分を外へ回す</td><td>回す</td><td>割高で始めたときの最悪が半分以下になる</td></tr><tr><td>B. 外の中身</td><td>SHV 半分＋NOC・GD・PEP・MCD</td><td>SHV だけが全局面で無傷。株は割高でないものに限る</td></tr><tr><td>C. 軸以外の1銘柄は1日の3分の1まで</td><td>入れる</td><td>月曜のような1銘柄への集中を防ぐ</td></tr><tr><td>D. AXON を逃げ先から外す（持っている分はそのまま）</td><td>外す</td><td>過去7回の下落すべてで17〜56%下げた</td></tr><tr><td>E. UI を外の候補から外す</td><td>外す</td><td>+129% から -16% まで当たり外れが大きい</td></tr></tbody></table></div></section>
+<section><h2>今週の成績</h2><p>投じた 214.01ドルが、11月27日の終値で 229.70ドル（+15.70ドル）。同じ金額を同じ時刻に別の買い方をした場合と比べます。</p><div class="pair"><div><p class="cap">同じ日・同じ金額で買った場合の成績</p><div class="bars" style="--left:0.000fr;--right:7.330fr">
+<div class="name">今回の積み立て</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:100.0%" title="今回の積み立て +7.3%"></div></div></div><div class="val">+7.3%</div>
+<div class="name">QLYS・TENB を半分ずつ</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:93.0%" title="QLYS・TENB を半分ずつ +6.8%"></div></div></div><div class="val">+6.8%</div>
+<div class="name">セキュリティ22銘柄を均等に</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:81.2%" title="セキュリティ22銘柄を均等に +6.0%"></div></div></div><div class="val">+6.0%</div>
+<div class="name">セキュリティの投資信託（CIBR）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:47.2%" title="セキュリティの投資信託（CIBR） +3.5%"></div></div></div><div class="val">+3.5%</div>
+<div class="name">小型株（IWM）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:43.4%" title="小型株（IWM） +3.2%"></div></div></div><div class="val">+3.2%</div>
+<div class="name">ナスダック100（QQQ）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:28.5%" title="ナスダック100（QQQ） +2.1%"></div></div></div><div class="val">+2.1%</div>
+<div class="name">S&amp;P500（SPY）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:24.4%" title="S&amp;P500（SPY） +1.8%"></div></div></div><div class="val">+1.8%</div>
+</div></div><div><p class="cap">持っている銘柄ごとの成績</p><div class="bars" style="--left:0.000fr;--right:15.400fr">
+<div class="name">AXON</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:100.0%" title="AXON +15.4%"></div></div></div><div class="val">+15.4%</div>
+<div class="name">FTNT</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:47.4%" title="FTNT +7.3%"></div></div></div><div class="val">+7.3%</div>
+<div class="name">TENB</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:46.8%" title="TENB +7.2%"></div></div></div><div class="val">+7.2%</div>
+<div class="name">QLYS</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:45.5%" title="QLYS +7.0%"></div></div></div><div class="val">+7.0%</div>
+<div class="name">FFIV</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:24.0%" title="FFIV +3.7%"></div></div></div><div class="val">+3.7%</div>
+<div class="name">GEN</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:9.7%" title="GEN +1.5%"></div></div></div><div class="val">+1.5%</div>
+</div></div></div><p class="note">今週（11月23〜27日）だけの損益は +18.84ドル。買う時刻の影響はほぼなし（寄り付きで買うと +7.75%、引けで買うと +7.28%）。GEN は大口の売り越しが続いている。出所：<code>draft/weekly_review.py</code></p></section>
+<section><h2>機関投資家は織り込み済みか</h2><div class="scroll"><table class=""><thead><tr><th></th><th>株価</th><th>アナリスト目標の平均</th><th>目標まで</th><th>買い推奨の割合</th><th>割安度の順位（100がいちばん割高）</th></tr></thead><tbody><tr><td>QLYS</td><td>206.33ドル</td><td>196.8ドル</td><td>-4.6%</td><td>18%</td><td>97</td></tr><tr><td>TENB</td><td>47.21ドル</td><td>48.4ドル</td><td>+2.4%</td><td>35%</td><td>88</td></tr></tbody></table></div><p class="note">順位は、株価売上高倍率（株価が1株あたり売上の何倍か）が、その銘柄自身の直近2年の中でどの位置にあるか。大口の注文は11月10〜27日の合計で QLYS +2,410万ドル、TENB +3,250万ドルの買い越し。QLYS は株価がすでに目標を上回っていて、「織り込み済み」という見方と合う。</p></section>
+<section><h2>軸が割高になったあと、どうなったか</h2><p>Webull の価格データ（2022年〜）には、軸が割高だった時期が今回の1回しかない。そこで米国の決算書類と長期の株価から同じ物差しを作り直し、QLYS は2013年、TENB は2020年までさかのぼった。</p><div class="pair"><div><p class="cap">その後60営業日の軸の成績（平均）</p><div class="bars" style="--left:4.000fr;--right:24.000fr">
+<div class="name">超割高（順位95以上）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:34.4%" title="超割高（順位95以上） +8.3%"></div></div></div><div class="val">+8.3%</div>
+<div class="name">割高（80〜95）</div><div class="track"><div class="l"><div class="bar neg" style="width:50.3%" title="割高（80〜95） -2.0%"></div></div><div class="r"></div></div><div class="val">-2.0%</div>
+<div class="name">普通（20〜80）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:18.9%" title="普通（20〜80） +4.5%"></div></div></div><div class="val">+4.5%</div>
+<div class="name">割安（20未満）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:35.5%" title="割安（20未満） +8.5%"></div></div></div><div class="val">+8.5%</div>
+<div class="name">全期間の平均</div><div class="track"><div class="l"></div><div class="r"><div class="bar dim" style="width:22.0%" title="全期間の平均 +5.3%"></div></div></div><div class="val">+5.3%</div>
+</div></div><div><p class="cap">その後250営業日（約1年）の軸の成績（平均）</p><div class="bars" style="--left:4.000fr;--right:24.000fr">
+<div class="name">超割高（順位95以上）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:15.0%" title="超割高（順位95以上） +3.6%"></div></div></div><div class="val">+3.6%</div>
+<div class="name">割高（80〜95）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:60.7%" title="割高（80〜95） +14.6%"></div></div></div><div class="val">+14.6%</div>
+<div class="name">普通（20〜80）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:93.2%" title="普通（20〜80） +22.4%"></div></div></div><div class="val">+22.4%</div>
+<div class="name">割安（20未満）</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:81.9%" title="割安（20未満） +19.6%"></div></div></div><div class="val">+19.6%</div>
+<div class="name">全期間の平均</div><div class="track"><div class="l"></div><div class="r"><div class="bar dim" style="width:77.4%" title="全期間の平均 +18.6%"></div></div></div><div class="val">+18.6%</div>
+</div></div></div><p class="note">超割高は2〜3か月は勢いが続くが、1年後は +3.6% にとどまる。割高は直後の60日が弱い。割高の時期は15回で、1年後まで見られる13回のうち5回は、1年以内に18%以上下げた。反対に 2017〜18年は割高のまま1年で +124%。出所：<code>draft/diversify_rich.py</code></p></section>
+<section><h2>割高のときに、どれだけ外へ回すか</h2><p>軸が割高の日に23営業日の積み立てを始め、毎日の一定割合を外へ回して、1年後まで持った場合（144本）。外は業種の投資信託4本と短期国債。あとから伸びたと分かっている個別株は入れていない。</p><div class="pair"><div><p class="cap">1年後の成績（平均）</p><div class="bars" style="--left:70.000fr;--right:12.000fr">
+<div class="name">外へ回さない</div><div class="track"><div class="l"></div><div class="r"><div class="bar dim" style="width:70.6%" title="外へ回さない +8.5%"></div></div></div><div class="val">+8.5%</div>
+<div class="name">3割を外へ</div><div class="track"><div class="l"></div><div class="r"><div class="bar dim" style="width:66.2%" title="3割を外へ +7.9%"></div></div></div><div class="val">+7.9%</div>
+<div class="name">半分を外へ</div><div class="track"><div class="l"></div><div class="r"><div class="bar " style="width:63.3%" title="半分を外へ +7.6%"></div></div></div><div class="val">+7.6%</div>
+<div class="name">7割を外へ</div><div class="track"><div class="l"></div><div class="r"><div class="bar dim" style="width:60.3%" title="7割を外へ +7.2%"></div></div></div><div class="val">+7.2%</div>
+<div class="name">全部を外へ</div><div class="track"><div class="l"></div><div class="r"><div class="bar dim" style="width:55.9%" title="全部を外へ +6.7%"></div></div></div><div class="val">+6.7%</div>
+</div></div><div><p class="cap">1年後の成績（いちばん悪かった1本）</p><div class="bars" style="--left:70.000fr;--right:12.000fr">
+<div class="name">外へ回さない</div><div class="track"><div class="l"><div class="bar neg" style="width:89.4%" title="外へ回さない -62.6%"></div></div><div class="r"></div></div><div class="val">-62.6%</div>
+<div class="name">3割を外へ</div><div class="track"><div class="l"><div class="bar neg" style="width:64.6%" title="3割を外へ -45.2%"></div></div><div class="r"></div></div><div class="val">-45.2%</div>
+<div class="name">半分を外へ</div><div class="track"><div class="l"><div class="bar neg" style="width:48.0%" title="半分を外へ -33.6%"></div></div><div class="r"></div></div><div class="val">-33.6%</div>
+<div class="name">7割を外へ</div><div class="track"><div class="l"><div class="bar neg" style="width:31.4%" title="7割を外へ -22.0%"></div></div><div class="r"></div></div><div class="val">-22.0%</div>
+<div class="name">全部を外へ</div><div class="track"><div class="l"><div class="bar neg" style="width:9.7%" title="全部を外へ -6.8%"></div></div><div class="r"></div></div><div class="val">-6.8%</div>
+</div></div></div><p class="note">外へ回す割合を上げても平均はあまり変わらず（+8.5% から +6.7%）、最悪だけが大きく縮む（-62.6% から -6.8%）。ふだん（割高でないとき）に外へ回すと、年に8ポイントほど取り逃すので、割高のときだけに限る。出所：<code>draft/diversify_share.py</code></p><h3>決まりとして、全部の時期に当てた場合</h3><div class="scroll"><table class=""><thead><tr><th>決まり</th><th>全607本の平均</th><th>最悪</th><th>割高で始めた144本の平均</th><th>その最悪</th></tr></thead><tbody><tr><td>外へ回さない</td><td>+17.9%</td><td>-62.6%</td><td>+9.9%</td><td>-62.6%</td></tr><tr><td>いつも半分を外へ</td><td>+12.1%</td><td>-32.0%</td><td>+7.5%</td><td>-32.0%</td></tr><tr><td>順位80以上で3割</td><td>+17.6%</td><td>-44.2%</td><td>+8.8%</td><td>-44.2%</td></tr><tr class="pick"><td>順位80以上で半分、95以上で7割（提案）</td><td>+17.4%</td><td>-43.9%</td><td>+7.9%</td><td>-24.1%</td></tr><tr><td>順位80以上で全部</td><td>+16.9%</td><td>-43.9%</td><td>+6.1%</td><td>-19.1%</td></tr><tr><td>逆：順位50未満のとき半分を外へ</td><td>+14.2%</td><td>-62.6%</td><td>+9.9%</td><td>-62.6%</td></tr></tbody></table></div><p class="note">しきい値や割合を動かしても結果はなだらかに変わるだけで、特定の数字にたまたま合っているわけではない。全体の最悪 -43.9% はどの決まりでも変わらない。これは割高でない水準から始まった下げ（2025年7月〜2026年4月）で、割高さを見る決まりでは防げない。出所：<code>draft/diversify_rule.py</code></p></section>
+<section><h2>分散先の候補は、今どれくらい割高か</h2><p>軸と同じ物差し（その銘柄自身の直近2年の中での位置）で並べたもの。80以上を「割高」としている。</p><div class="bars" style="--left:0.000fr;--right:100.000fr">
+<div class="name">軸：クオリス（QLYS）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:97.4%" title="軸：クオリス（QLYS） +97"></div></div></div><div class="val">+97</div>
+<div class="name">軸：テナブル（TENB）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:88.0%" title="軸：テナブル（TENB） +88"></div></div></div><div class="val">+88</div>
+<div class="name">アムジェン（AMGN）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:99.8%" title="アムジェン（AMGN） +100"></div></div></div><div class="val">+100</div>
+<div class="name">チャブ（CB）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:99.8%" title="チャブ（CB） +100"></div></div></div><div class="val">+100</div>
+<div class="name">トラベラーズ（TRV）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:99.8%" title="トラベラーズ（TRV） +100"></div></div></div><div class="val">+100</div>
+<div class="name">コカ・コーラ（KO）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:98.4%" title="コカ・コーラ（KO） +98"></div></div></div><div class="val">+98</div>
+<div class="name">J&amp;J（JNJ）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:97.8%" title="J&amp;J（JNJ） +98"></div></div></div><div class="val">+98</div>
+<div class="name">P&amp;G（PG）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:93.8%" title="P&amp;G（PG） +94"></div></div></div><div class="val">+94</div>
+<div class="name">ウォルマート（WMT）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:92.2%" title="ウォルマート（WMT） +92"></div></div></div><div class="val">+92</div>
+<div class="name">ダラー・ゼネラル（DG）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:89.6%" title="ダラー・ゼネラル（DG） +90"></div></div></div><div class="val">+90</div>
+<div class="name">ロッキード（LMT）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:83.6%" title="ロッキード（LMT） +84"></div></div></div><div class="val">+84</div>
+<div class="name">RTX（RTX）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:70.8%" title="RTX（RTX） +71"></div></div></div><div class="val">+71</div>
+<div class="name">ゼネラル・ダイナミクス（GD）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:62.2%" title="ゼネラル・ダイナミクス（GD） +62"></div></div></div><div class="val">+62</div>
+<div class="name">ノースロップ（NOC）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:50.6%" title="ノースロップ（NOC） +51"></div></div></div><div class="val">+51</div>
+<div class="name">ペプシコ（PEP）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:37.0%" title="ペプシコ（PEP） +37"></div></div></div><div class="val">+37</div>
+<div class="name">マクドナルド（MCD）</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:25.4%" title="マクドナルド（MCD） +25"></div></div></div><div class="val">+25</div>
+</div><div class="legend"><span><i style="background:var(--series)"></i>80以上（割高）</span><span><i style="background:var(--dim)"></i>80未満</span></div><p class="note">生活必需品・製薬・保険の大手は、この1年で30〜40%上がり、軸と同じ水準まで買われている。アナリスト目標が株価より下の銘柄も多い（アムジェン -7.0%、トラベラーズ -7.5%）。ただし守りの株35銘柄で確かめると、割高なものもその後1年は平均 +14%（割安なものは +18.6%）。割高だから危ない、とまでは言えず、選ぶときの優先順位に使う程度。割高でない NOC は、11月の中間選挙のあと国防予算の懸念で急落した銘柄で、安い理由がそのまま危険でもある。出所：<code>draft/diversify_profile.py</code>、<code>draft/diversify_valuecheck.py</code></p><h3>日本の Webull で買えないもの</h3><p>短期国債の投資信託 SGOV・BIL、値動きの小さい株の投資信託 USMV、保険の投資信託は取引不可。短期国債の置き場は SHV（0〜1年の米国債、直近1年 +3.6%）になる。個別株はどれも端株で買える。</p></section>
+<section><h2>過去の下落で、それぞれどう動いたか</h2><div class="scroll"><table class="tight"><thead><tr><th>下落の時期</th><th>軸</th><th>守りの株</th><th>投資信託</th><th>SHV</th><th>UI</th><th>AXON</th><th>QQQ</th></tr></thead><tbody><tr><td>2015年6月〜16年2月（QLYS -65%）</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 42%, var(--surface))">-63%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 9%, var(--surface))">+9%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 4%, var(--surface))">-4%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 0%, var(--surface))">+0%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 9%, var(--surface))">-8%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 42%, var(--surface))">-55%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 13%, var(--surface))">-12%</td></tr><tr><td>2018年秋</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 33%, var(--surface))">-32%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 14%, var(--surface))">-14%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 12%, var(--surface))">-12%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+1%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+1%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 42%, var(--surface))">-46%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 22%, var(--surface))">-21%</td></tr><tr><td>2020年 コロナ急落</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 26%, var(--surface))">-24%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 32%, var(--surface))">-31%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 37%, var(--surface))">-35%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+1%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 12%, var(--surface))">-12%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 29%, var(--surface))">-27%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 29%, var(--surface))">-27%</td></tr><tr><td>2021年11月〜22年11月（利上げ）</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 28%, var(--surface))">-26%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 28%, var(--surface))">+27%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+1%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 0%, var(--surface))">+0%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 11%, var(--surface))">+10%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 17%, var(--surface))">-17%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 36%, var(--surface))">-34%</td></tr><tr><td>2025年 関税ショック</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 22%, var(--surface))">-21%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 3%, var(--surface))">+3%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 8%, var(--surface))">-8%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+1%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 17%, var(--surface))">-16%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 30%, var(--surface))">-29%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 24%, var(--surface))">-23%</td></tr><tr><td>2025年7月〜26年4月（セキュリティだけ下げ）</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 42%, var(--surface))">-50%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 12%, var(--surface))">+11%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 15%, var(--surface))">+14%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 3%, var(--surface))">+3%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 42%, var(--surface))">+129%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 42%, var(--surface))">-56%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 12%, var(--surface))">+11%</td></tr><tr><td>2026年10〜11月（AI関連の急落）</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+1%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 11%, var(--surface))">+11%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 5%, var(--surface))">+5%</td><td class="heat" style="background:color-mix(in oklab, var(--series) 1%, var(--surface))">+0%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 3%, var(--surface))">-3%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 31%, var(--surface))">-29%</td><td class="heat" style="background:color-mix(in oklab, var(--neg) 20%, var(--surface))">-20%</td></tr></tbody></table></div><p class="note">軸は QLYS と TENB、守りの株は NOC・GD・PEP・MCD・PGR、投資信託は防衛・ヘルスケア・生活必需品・電力の4本、SHV は短期国債、QQQ はナスダック100。色は青が値上がり、赤が値下がり。AXON は7回すべてで軸と同じかそれ以上に下げた。守りの株と投資信託は、コロナ急落では軸より大きく下げた。全部の回で減らなかったのは短期国債だけ。</p><h3>60年分の業種データ：ソフトウェアが25%以上下げた12回で、上がっていた割合</h3><div class="bars" style="--left:0.000fr;--right:100.000fr">
+<div class="name">短期国債</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar " style="width:100.0%" title="短期国債 +100%"></div></div></div><div class="val">+100%</div>
+<div class="name">清涼飲料</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:66.7%" title="清涼飲料 +67%"></div></div></div><div class="val">+67%</div>
+<div class="name">たばこ</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:58.3%" title="たばこ +58%"></div></div></div><div class="val">+58%</div>
+<div class="name">食品</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:58.3%" title="食品 +58%"></div></div></div><div class="val">+58%</div>
+<div class="name">電力</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:50.0%" title="電力 +50%"></div></div></div><div class="val">+50%</div>
+<div class="name">防衛</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:50.0%" title="防衛 +50%"></div></div></div><div class="val">+50%</div>
+<div class="name">石油</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:41.7%" title="石油 +42%"></div></div></div><div class="val">+42%</div>
+<div class="name">保険</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:33.3%" title="保険 +33%"></div></div></div><div class="val">+33%</div>
+<div class="name">小売</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:25.0%" title="小売 +25%"></div></div></div><div class="val">+25%</div>
+<div class="name">製薬</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:16.7%" title="製薬 +17%"></div></div></div><div class="val">+17%</div>
+<div class="name">市場全体</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:16.7%" title="市場全体 +17%"></div></div></div><div class="val">+17%</div>
+<div class="name">半導体</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:16.7%" title="半導体 +17%"></div></div></div><div class="val">+17%</div>
+<div class="name">外食</div><div class="track plain"><div class="l"></div><div class="r"><div class="bar dim" style="width:8.3%" title="外食 +8%"></div></div></div><div class="val">+8%</div>
+</div><p class="note">セキュリティという業種はデータにないので、ソフトウェアで代用。ソフトウェアが大きく下げるとき、市場全体も6回に5回は下げている。防衛は 2000〜02年と 2021〜22年に大きく上げたが、2008年は -41%。外食は12回中1回しか上がっていない（マクドナルドは外食の中では例外的に下げにくい）。出所：<code>draft/diversify_longrun.py</code></p></section>
+<section><h2>提案する決まりと、月曜の注文</h2><div class="box"><ol><li><b>外へ回す割合を、軸の状態で決める。</b>軸2銘柄の順位の平均が80未満なら 0（今と同じ）、80以上なら毎日の半分、95以上なら7割。今は 92.7 なので半分。</li><li><b>外の中身。</b>半分を SHV、残りを NOC・GD・PEP・MCD に等分。その日に「上がりすぎ」の判定にかかった銘柄の分は SHV に回す。</li><li><b>1銘柄の上限。</b>軸以外の1銘柄は1日の3分の1まで。超える分は外へ。</li><li><b>AXON と UI を逃げ先から外す。</b>持っている分は売らない。</li><li>SHV は置き場。軸が普通〜割安に戻ったときに SHV を売って軸へ戻す決まりは、3か月後の見直しで作る。</li></ol></div><h3>月曜（米国 11月30日）の注文の試算</h3><p>11月27日の終値で判定、1日 27.57ドル。QLYS は順位97で買わない、TENB・GEN・FTNT は上がりすぎの判定、AXON は5日で +18%。セキュリティの中で買えるのは FFIV だけ。</p><div class="scroll"><table class="text"><thead><tr><th>決まり</th><th>注文</th></tr></thead><tbody><tr><td>今のまま</td><td>FFIV 27.57ドル（100%）</td></tr><tr><td>今の決まり＋1銘柄の上限（超過は UI へ）</td><td>UI 18.38ドル（67%）、FFIV 9.19ドル（33%）</td></tr><tr class="pick"><td>提案</td><td>SHV 16.08ドル（58%）、FFIV 9.19ドル（33%）、GD 2.30ドル（8%）</td></tr></tbody></table></div><p class="note">提案では NOC・PEP・MCD も上がりすぎの判定にかかるので、その分が SHV に入る。全体が大きく上げた直後なので、月曜は「ほとんど置き場へ」になる。決まりの計算にはこの切り替えを入れてあるが、初期値はオフで、本番の注文は変えていない。出所：<code>draft/diversify_preview.py</code></p></section>
+<section><h2>この研究の弱いところ</h2><div class="box"><ul>
+<li><b>例が少ない。</b>軸が割高だった時期は15回。TENB も入っているのは2020年以降だけ。</li>
+<li><b>あとから選んでいる。</b>NOC・GD・PEP・MCD は、今の割高さと直近の下落を見て選んだ。業種で見ると、下落時に上がっていたのは防衛が5割、外食は1割。</li>
+<li><b>今の環境に寄っている。</b>この1年は利上げ・物価高・戦争で、守りの株と資源が買われた。利下げや和平で逆回転すれば、守りの株は取り残される。</li>
+<li><b>防げない下げがある。</b>割高でない水準から始まる下げ（2025〜26年のセキュリティの下げ）には、この決まりは何もしない。全部が売られる危機では、守りの株も20〜60%下げる。</li>
+<li><b>割合に強い根拠はない。</b>半分・7割は目安。上げるほど落ち込みは減り、上昇の取り分も減る。</li>
+<li><b>期間が短い。</b>今回の積み立ては残り15営業日。この研究が見ているのは半年〜1年先で、12月18日までの値動きについては何も言えない。</li>
+</ul></div><p class="note">くわしい記録は <code>draft/research/diversification.md</code>。</p></section>
+</main>
