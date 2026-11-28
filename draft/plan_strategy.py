@@ -11,6 +11,9 @@ Plan: spend a fixed budget over `days` trading days, buying every day (60 at fir
   other names    must be growing and profitable where that is known; names in cfg["prefer"] first, then cheapest P/S rank
   outside        when the core is rich and no other security name qualifies, the rest goes to cfg["outside"]
                  (names from other sectors) at the full pace, instead of slowing down
+  options        cfg["cap_other"]: the largest share of the day one name outside the core may take; the part above
+                 it goes to cfg["outside"], or stays in cash when there is none. cfg["unblocked"]: names that skip
+                 the band / jump check (a Treasury-bill fund is always above its band). Both are off by default
   selling        only an unexplained spike: P/S rank >= 95 and 50-day z >= 2 with no earnings release in the
                  last five sessions. The holding above its target weight is sold; a name sold today is not
                  bought today; the cash goes back into the remaining days
@@ -80,7 +83,7 @@ def decide(day, cash, shares, days_left, plain_daily, panels, core, others, cfg=
 
     def factor(sym):
         r = rank.get(sym, np.nan)
-        if sym in orders or blocked.get(sym, False) or np.isnan(prev.get(sym, np.nan)):
+        if sym in orders or (blocked.get(sym, False) and sym not in cfg.get("unblocked", [])) or np.isnan(prev.get(sym, np.nan)):
             return 0.0
         if np.isnan(r):
             return 1.0
@@ -117,6 +120,18 @@ def decide(day, cash, shares, days_left, plain_daily, panels, core, others, cfg=
         cheap_core = np.mean([f for f in core_f.values()]) >= 1.25
         went_outside = any(s in weights for s in cfg.get("outside", []))
         pace = 2.0 if cheap_core else 0.5 if (core_rich and not pool and not went_outside) else 1.0
+    cap = cfg.get("cap_other")                                  # the largest share of the day that one name outside the core may take
+    if cap:
+        names_out = cfg.get("outside", [])
+        weights = {s: w / total_w for s, w in weights.items()}
+        over = {s: w - cap for s, w in weights.items() if s not in core and s not in names_out and w > cap}
+        if over:
+            for s in over:
+                weights[s] = cap
+            takers = [s for s in names_out if factor(s) > 0]
+            for s in takers:                                   # the part above the cap goes outside the sector;
+                weights[s] = weights.get(s, 0) + sum(over.values()) / len(takers)
+        total_w = 1.0                                          # with nowhere to go it stays in cash for the remaining days
     budget = min(cash / max(days_left, 1) * pace, 2 * plain_daily, cash)
     buys = {s: budget * w / total_w for s, w in weights.items() if budget * w / total_w >= cfg["min_order"]}
     for s, amount in sorted(buys.items(), key=lambda kv: -kv[1])[:cfg["max_orders"] - len(orders)]:
@@ -132,7 +147,7 @@ def run_plan(panels, core, others, start, days, hold_after=126, cfg=CFG, plain=F
     symbols = list(panels["close"].columns)
     shares, cash = pd.Series(0.0, index=symbols), CAPITAL
     plain_daily = CAPITAL / days
-    wealth, n_orders, n_sells = [], 0, 0
+    wealth, n_orders, n_sells, spent = [], 0, 0, pd.Series(0.0, index=symbols)
     for k in range(days + hold_after):
         if start + k >= len(idx):
             break
@@ -150,6 +165,7 @@ def run_plan(panels, core, others, start, days, hold_after=126, cfg=CFG, plain=F
                     amount = min(amount, cash)
                     shares[sym] += amount / (px * (1 + SLIP))
                     cash -= amount
+                    spent[sym] += amount
                 else:
                     qty = min(-amount / px, shares[sym])
                     shares[sym] -= qty
@@ -164,7 +180,7 @@ def run_plan(panels, core, others, start, days, hold_after=126, cfg=CFG, plain=F
     w = pd.Series(wealth) / CAPITAL
     return dict(end=w.iloc[min(days, len(w)) - 1], later=w.iloc[-1] if len(w) >= days + hold_after else np.nan,
                 dip=(w / w.cummax() - 1).min(), low=w.min(), orders=n_orders / days, sells=n_sells,
-                names=int((shares > 1e-9).sum()), cash_end=cash / CAPITAL)
+                names=int((shares > 1e-9).sum()), cash_end=cash / CAPITAL, spent=spent, wealth=w)
 
 
 def main():
