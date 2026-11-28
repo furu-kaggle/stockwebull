@@ -79,7 +79,7 @@ def esc(text):
 
 
 def signed(v, digits=1, unit="%"):
-    return f"{v:+.{digits}f}{unit}"
+    return f"{v:.0f}{unit}" if unit == "件" else f"{v:+.{digits}f}{unit}"
 
 
 def bars(rows, scale=None, digits=1, unit="%", plain=False):
@@ -222,6 +222,24 @@ def main():
         "ただし守りの株35銘柄で確かめると、割高なものもその後1年は平均 +14%（割安なものは +18.6%）。割高だから危ない、とまでは言えず、選ぶときの優先順位に使う程度。"
         "割高でない NOC は、11月の中間選挙のあと国防予算の懸念で急落した銘柄で、安い理由がそのまま危険でもある。出所：<code>draft/diversify_profile.py</code>、<code>draft/diversify_valuecheck.py</code></p>"
         "<h3>日本の Webull で買えないもの</h3><p>短期国債の投資信託 SGOV・BIL、値動きの小さい株の投資信託 USMV、保険の投資信託は取引不可。短期国債の置き場は SHV（0〜1年の米国債、直近1年 +3.6%）になる。個別株はどれも端株で買える。</p></section>")
+
+    # ---- how much X talks about them (draft/x_defensive.py --summary)
+    from x_defensive import summary
+    rotation, valuation, tickers = summary()
+    month_label = lambda m: f"{m[:4]}年{int(m[5:])}月" if m.endswith("-01") or m == rotation.index[0] else f"{int(m[5:])}月"
+    rot_rows = [(month_label(m) + ("（27日まで）" if m == rotation.index[-1] else ""), float(v), "" if m >= "2026-10" else "dim") for m, v in rotation.items()]
+    before = tickers.iloc[:-3].mean()
+    tick_names = {"KO": "コカ・コーラ", "WMT": "ウォルマート", "COST": "コストコ", "PG": "P&G", "NOC": "ノースロップ", "GD": "ゼネラル・ダイナミクス", "LMT": "ロッキード", "RTX": "RTX",
+                  "PEP": "ペプシコ", "MCD": "マクドナルド"}
+    tick_rows = [[f"{tick_names[t]}（{t}）", f"{before[t]:.0f}", str(tickers[t].iloc[-3]), str(tickers[t].iloc[-2]), str(tickers[t].iloc[-1])] for t in tickers.columns]
+    add('<section><h2>X ではどれくらい話題になっているか</h2><p>人気が集まりすぎていないかを見るために、英語の投稿を月ごとに数えた（一定以上「いいね」がついたものだけ）。</p>'
+        '<p class="cap">「守りの株へ資金が移っている」という話題の投稿数（いいね100以上）</p>' + bars(rot_rows, digits=0, unit="件", plain=True) +
+        "<h3>銘柄ごとの投稿数（いいね50以上）</h3>" + table(["銘柄", f"{tickers.index[0][:4]}年{int(tickers.index[0][5:])}月〜{tickers.index[-4][:4]}年{int(tickers.index[-4][5:])}月の月平均", "9月", "10月", "11月（27日まで）"], tick_rows) +
+        f'<p class="note">生活必需品の投稿のうち割高さに触れたものは、それまで月 {valuation.iloc[:-1].min()}〜{valuation.iloc[:-1].max()} 件だったのが、11月は {valuation.iloc[-1]} 件。'
+        "「安全資産株のバブル」「生活必需品の割高さは1999年以来」「ウォルマートに利益の40倍」といった内容で、人気が集まりすぎていることを皮肉る投稿が多い。"
+        "防衛は逆に、11月の投稿がほとんどない。ペプシコとマクドナルドは9〜10月に1年の安値をつけたときに話題になり、今は落ち着いている。"
+        "10月にペプシコの取締役が2,370万ドル分の自社株を買った、という投稿が複数ある（投稿による情報で、届け出は確認していない）。"
+        "話題の少なさで選ぶなら、防衛がいちばん「まだ織り込まれていない」側にある。出所：<code>draft/x_defensive.py</code></p></section>")
 
     add('<section><h2>過去の下落で、それぞれどう動いたか</h2>' + table(
         ["下落の時期", "軸", "守りの株", "投資信託", "SHV", "UI", "AXON", "QQQ"],

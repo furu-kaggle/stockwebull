@@ -10,10 +10,11 @@
 A rising count means the idea is getting crowded; a flat one means it is not yet a popular trade.
 Output: draft/x_defensive.csv.
 
-Usage: python draft/x_defensive.py [--start 2025-11] [--pages 10]
+Usage: python draft/x_defensive.py [--start 2025-11] [--pages 10] [--summary]
 """
 import argparse
 import os
+import re
 
 import pandas as pd
 
@@ -31,11 +32,35 @@ QUERIES = {
 }
 
 
+MARKET = re.compile(r"stock|staples|\$[A-Za-z]{1,5}\b|market|investor|portfolio|equit|rally|sell-?off|S&P|nasdaq", re.I)
+NOT_MARKET = re.compile(r"pick & roll|pick &amp; roll|basketball|NBA|Army|troops", re.I)          # "defensive rotation" is also a basketball term
+VALUATION = re.compile(r"bubble|overvalued|expensive|\bP/?E\b|\d+\s?[x×]\b|multiple|priced for|nosebleed|rich valuation", re.I)
+TICKERS = ["KO", "WMT", "COST", "PG", "NOC", "GD", "LMT", "RTX", "PEP", "MCD"]
+
+
+def summary():
+    """Monthly counts from the saved posts: the rotation story (market posts only), staples posts that talk about
+    valuation, and posts naming each ticker (any of the searches)."""
+    d = pd.read_csv(os.path.join(HERE, "x_defensive.csv"))
+    months = sorted(d.month.unique())
+    count = lambda rows: rows.groupby("month").id.count().reindex(months, fill_value=0)
+    rotation = count(d[(d.q == "rotation") & d.text.apply(lambda t: bool(MARKET.search(t)) and not NOT_MARKET.search(t))])
+    valuation = count(d[(d.q == "staples") & d.text.apply(lambda t: bool(VALUATION.search(t)))])
+    tickers = pd.DataFrame({sym: count(d[d.text.str.contains(r"\$" + sym + r"\b", case=False, regex=True)].drop_duplicates("id")) for sym in TICKERS})
+    return rotation, valuation, tickers
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--start", default="2025-11")
     parser.add_argument("--pages", type=int, default=10)
+    parser.add_argument("--summary", action="store_true", help="print the counts from the saved posts without searching again")
     args = parser.parse_args()
+    if args.summary:
+        rotation, valuation, tickers = summary()
+        pd.set_option("display.width", 200)
+        print(pd.DataFrame({"rotation story": rotation, "staples posts on valuation": valuation}).join(tickers).to_string())
+        return
     months = pd.period_range(args.start, pd.Timestamp.now().strftime("%Y-%m"), freq="M")
     rows = []
     for name, query in QUERIES.items():
