@@ -24,7 +24,7 @@ CIK = {"QLYS": 1107843, "TENB": 1660280,
        "KO": 21344, "PEP": 77476, "PG": 80424, "CL": 21665, "WMT": 104169, "COST": 909832, "DG": 29534, "MO": 764180, "MCD": 63908, "GIS": 40704, "KR": 56873,
        "PM": 1413329, "JNJ": 200406, "MRK": 310158, "AMGN": 318154, "ABBV": 1551152, "LLY": 59478, "UNH": 731766, "CB": 896159, "TRV": 86312, "PGR": 80661,
        "DUK": 1326160, "SO": 92122, "NEE": 753308, "CBOE": 1374310, "CME": 1156375, "ICE": 1571949, "WM": 823768, "RSG": 1060391, "XOM": 34088, "CVX": 93410,
-       "NOC": 1133421, "LMT": 936468, "GD": 40533, "RTX": 101829}
+       "NOC": 1133421, "LMT": 936468, "GD": 40533, "RTX": 101829, "LHX": 202058, "HII": 1501585}
 REVENUE_TAGS = ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet", "RevenueFromContractWithCustomerIncludingAssessedTax"]
 SHARE_TAGS = ["WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasicAndDiluted",
               "WeightedAverageNumberOfShareOutstandingBasicAndDiluted", "WeightedAverageNumberOfSharesOutstandingBasic"]   # loss-making companies report only the later ones
@@ -84,17 +84,15 @@ def _periods(facts, tags, unit):
     return t
 
 
-def sales_per_share(symbol):
-    facts = _facts(symbol)
-    rev, shr = _periods(facts, REVENUE_TAGS, "USD"), _periods(facts, SHARE_TAGS, "shares")
-    year = rev[rev.months == 12].set_index("end")
+def _trailing_year(periods):
+    """Trailing-twelve-month value and the period end it covers, by the day each filing became public."""
+    year = periods[periods.months == 12].set_index("end")
     out = {}
     for end, row in year.iterrows():                                   # a full year is the trailing 12 months as of its filing
         out[row.filed] = (row.val, end)
-    cum = rev[rev.months.isin([3, 6, 9])]
+    cum = periods[periods.months.isin([3, 6, 9])]
     for _, row in cum.iterrows():                                      # year-to-date + last full year - the same year-to-date a year before
         prev_year = year[(year.index < row.end) & (year.index >= row.end - pd.Timedelta(days=330))]
-        before = cum[(cum.months == row.months) & ((cum.end - (row.end - pd.Timedelta(days=365))).abs() <= pd.Timedelta(days=10))]
         ytd_now = cum[(cum.end == row.end)].sort_values("months").iloc[-1]
         if row.months != ytd_now.months or prev_year.empty:
             continue
@@ -102,11 +100,21 @@ def sales_per_share(symbol):
         if ytd_before.empty:
             continue
         out[row.filed] = (ytd_now.val + prev_year.val.iloc[-1] - ytd_before.val.iloc[0], row.end)
-    ttm = pd.DataFrame(out, index=["rev", "end"]).T.sort_index()
-    ttm = ttm[ttm.end == ttm.end.cummax()]                             # ignore a late restatement of an old period
+    ttm = pd.DataFrame(out, index=["val", "end"]).T.sort_index()
+    return ttm[ttm.end == ttm.end.cummax()]                            # ignore a late restatement of an old period
+
+
+def sales_per_share(symbol):
+    facts = _facts(symbol)
+    ttm, shr = _trailing_year(_periods(facts, REVENUE_TAGS, "USD")), _periods(facts, SHARE_TAGS, "shares")
     quarter_shares = shr.sort_values(["end", "months"]).groupby("end").first().val
     ttm["shares"] = [quarter_shares[quarter_shares.index <= e].iloc[-1] if (quarter_shares.index <= e).any() else np.nan for e in ttm.end]
-    return (ttm.rev.astype(float) / ttm.shares).dropna()
+    return (ttm.val.astype(float) / ttm.shares).dropna()
+
+
+def earnings_per_share(symbol):
+    """Trailing-twelve-month diluted earnings per share as reported, by filing day."""
+    return _trailing_year(_periods(_facts(symbol), ["EarningsPerShareDiluted"], "USD/shares")).val.astype(float)
 
 
 SINCE = {"TENB": "2019-06-01"}      # share counts before then mix in the months before the listing (July 2018)
