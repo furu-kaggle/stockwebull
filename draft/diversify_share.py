@@ -26,7 +26,10 @@ BASKETS = {"defense": ["NOC", "LMT", "GD"], "health": ["LLY", "AMGN", "MRK", "JN
            "mix (defense, health, insurers, DG, T-bills)": ["NOC", "LMT", "AMGN", "MRK", "CB", "TRV", "DG", "BIL"],
            # sector funds: the same idea without picking the stocks that turned out to be winners
            "fund: defense": ["ITA"], "fund: health": ["XLV"], "fund: staples": ["XLP"], "fund: insurers": ["KIE"], "fund: utilities": ["XLU"],
-           "fund mix (defense, health, staples, insurers, T-bills)": ["ITA", "XLV", "XLP", "KIE", "BIL"]}
+           "fund mix (defense, health, staples, insurers, T-bills)": ["ITA", "XLV", "XLP", "KIE", "BIL"],
+           # what can be bought at Webull Japan today (stage 4): defensive names that are not stretched, tradable funds, and SHV for T-bills
+           "plan A: NOC, GD, PEP, MCD, PGR": ["NOC", "GD", "PEP", "MCD", "PGR"], "plan B: funds ITA, XLV, XLP, XLU": ["ITA", "XLV", "XLP", "XLU"], "plan C: SHV": ["SHV"],
+           "plan D: A and SHV half each": ["NOC", "GD", "PEP", "MCD", "PGR", "SHV", "SHV", "SHV", "SHV", "SHV"]}
 SHARES = [0.0, 0.3, 0.5, 0.7, 1.0]
 BUY_DAYS, HOLD = 23, 250
 

@@ -11,9 +11,14 @@ Plan: spend a fixed budget over `days` trading days, buying every day (60 at fir
   other names    must be growing and profitable where that is known; names in cfg["prefer"] first, then cheapest P/S rank
   outside        when the core is rich and no other security name qualifies, the rest goes to cfg["outside"]
                  (names from other sectors) at the full pace, instead of slowing down
-  options        cfg["cap_other"]: the largest share of the day one name outside the core may take; the part above
-                 it goes to cfg["outside"], or stays in cash when there is none. cfg["unblocked"]: names that skip
-                 the band / jump check (a Treasury-bill fund is always above its band). Both are off by default
+  options        (all off by default)
+                 cfg["cap_other"]: the largest share of the day one name outside the core may take; the part above
+                 it goes to cfg["outside"], or stays in cash when there is none
+                 cfg["outside_share"]: {core rank: share}, the part of every day sent to cfg["outside"] while the
+                 core's average P/S rank is at or above that level, e.g. {80: 0.5, 95: 0.7}
+                 cfg["outside_mix"]: weights among the outside names (equal if not given); cfg["park"]: the outside
+                 name that takes the part of any other outside name that fails the band / jump check
+                 cfg["unblocked"]: names that skip that check (a Treasury-bill fund is always above its band)
   selling        only an unexplained spike: P/S rank >= 95 and 50-day z >= 2 with no earnings release in the
                  last five sessions. The holding above its target weight is sold; a name sold today is not
                  bought today; the cash goes back into the remaining days
@@ -107,30 +112,42 @@ def decide(day, cash, shares, days_left, plain_daily, panels, core, others, cfg=
         rest = 1 - sum(weights.get(s, 0) for s in core)
         for s in pool:
             weights[s] = rest / len(pool)
+    names_out = cfg.get("outside", [])
+    mix = cfg.get("outside_mix") or {s: 1.0 for s in names_out}
+    park = cfg.get("park")
+
+    def to_outside(part):
+        """Spread `part` of the day over the outside names. One that cannot be bought today passes its part to the parking name."""
+        ok = {s: mix[s] for s in names_out if mix.get(s, 0) > 0 and factor(s) > 0}
+        if park in ok:
+            ok[park] += sum(w for s, w in mix.items() if s in names_out and s not in ok)
+        for s, w in ok.items():
+            weights[s] = weights.get(s, 0) + part * w / sum(ok.values())
+
     if not pool:                                               # nowhere left inside the sector: the rest goes outside it
-        outside = [s for s in cfg.get("outside", []) if factor(s) > 0]
-        rest = 1 - sum(weights.values())
-        for s in outside:
-            weights[s] = rest / len(outside)
+        to_outside(1 - sum(weights.values()))
     total_w = sum(weights.values())
     if total_w <= 0:                                           # nothing attractive: buy the least stretched core name at half pace
         fallback = min(core, key=lambda s: rank.get(s, 50) if not np.isnan(rank.get(s, np.nan)) else 50)
         weights, total_w, pace = {fallback: 1.0}, 1.0, 0.5
     else:
         cheap_core = np.mean([f for f in core_f.values()]) >= 1.25
-        went_outside = any(s in weights for s in cfg.get("outside", []))
+        level = np.nanmean([rank.get(s, np.nan) for s in core])  # how rich the core is: sets the part of the day sent outside
+        share = max([v for k, v in (cfg.get("outside_share") or {}).items() if level >= k], default=0.0)
+        if share > 0 and names_out:
+            weights = {s: w / total_w * (1 - share) for s, w in weights.items()}
+            to_outside(share)
+            total_w = 1.0                                      # if nothing outside can be bought, that part stays in cash
+        went_outside = any(weights.get(s, 0) > 0 for s in names_out)
         pace = 2.0 if cheap_core else 0.5 if (core_rich and not pool and not went_outside) else 1.0
     cap = cfg.get("cap_other")                                  # the largest share of the day that one name outside the core may take
     if cap:
-        names_out = cfg.get("outside", [])
         weights = {s: w / total_w for s, w in weights.items()}
         over = {s: w - cap for s, w in weights.items() if s not in core and s not in names_out and w > cap}
-        if over:
-            for s in over:
-                weights[s] = cap
-            takers = [s for s in names_out if factor(s) > 0]
-            for s in takers:                                   # the part above the cap goes outside the sector;
-                weights[s] = weights.get(s, 0) + sum(over.values()) / len(takers)
+        for s in over:
+            weights[s] = cap
+        if over:                                               # the part above the cap goes outside the sector;
+            to_outside(sum(over.values()))
         total_w = 1.0                                          # with nowhere to go it stays in cash for the remaining days
     budget = min(cash / max(days_left, 1) * pace, 2 * plain_daily, cash)
     buys = {s: budget * w / total_w for s, w in weights.items() if budget * w / total_w >= cfg["min_order"]}

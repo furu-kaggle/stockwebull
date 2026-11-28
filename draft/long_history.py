@@ -19,7 +19,12 @@ from indicator_compare import as_of, trailing_rank
 HERE = os.path.dirname(os.path.abspath(__file__))
 YDIR, SDIR = os.path.join(HERE, "cache", "yahoo"), os.path.join(HERE, "cache", "sec")
 AGENT = {"User-Agent": "Mozilla/5.0 (research script)"}
-CIK = {"QLYS": 1107843, "TENB": 1660280}                       # others are looked up in the SEC's ticker list
+# SEC company numbers, each checked against data.sec.gov/submissions (name and ticker)
+CIK = {"QLYS": 1107843, "TENB": 1660280,
+       "KO": 21344, "PEP": 77476, "PG": 80424, "CL": 21665, "WMT": 104169, "COST": 909832, "DG": 29534, "MO": 764180, "MCD": 63908, "GIS": 40704, "KR": 56873,
+       "PM": 1413329, "JNJ": 200406, "MRK": 310158, "AMGN": 318154, "ABBV": 1551152, "LLY": 59478, "UNH": 731766, "CB": 896159, "TRV": 86312, "PGR": 80661,
+       "DUK": 1326160, "SO": 92122, "NEE": 753308, "CBOE": 1374310, "CME": 1156375, "ICE": 1571949, "WM": 823768, "RSG": 1060391, "XOM": 34088, "CVX": 93410,
+       "NOC": 1133421, "LMT": 936468, "GD": 40533, "RTX": 101829}
 REVENUE_TAGS = ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet", "RevenueFromContractWithCustomerIncludingAssessedTax"]
 SHARE_TAGS = ["WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasicAndDiluted",
               "WeightedAverageNumberOfShareOutstandingBasicAndDiluted", "WeightedAverageNumberOfSharesOutstandingBasic"]   # loss-making companies report only the later ones
@@ -53,21 +58,12 @@ def prices(symbols, refresh=False):
     return {"close": pd.DataFrame(close).sort_index(), "adj": pd.DataFrame(adj).sort_index()}
 
 
-def _cik(symbol):
-    if symbol in CIK:
-        return CIK[symbol]
-    path = os.path.join(SDIR, "_tickers.json")
-    if not os.path.exists(path):
-        open(path, "wb").write(_get("https://www.sec.gov/files/company_tickers.json"))
-    table = {row["ticker"]: row["cik_str"] for row in json.load(open(path)).values()}
-    return table[symbol.replace(" ", "-")]
-
-
 def _facts(symbol):
     os.makedirs(SDIR, exist_ok=True)
     path = os.path.join(SDIR, f"{symbol}.json")
     if not os.path.exists(path):
-        open(path, "wb").write(_get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{_cik(symbol):010d}.json"))
+        body = _get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK[symbol]:010d}.json")
+        open(path, "wb").write(body)
         time.sleep(0.3)
     return json.load(open(path))["facts"]["us-gaap"]
 
