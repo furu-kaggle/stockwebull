@@ -121,6 +121,8 @@ def main():
     profile = pd.read_csv(os.path.join(CACHE, "div_profile.csv"), index_col=0)
     value = pd.read_csv(os.path.join(CACHE, "div_valuecheck.csv"), index_col=0)
     names = pd.read_csv(os.path.join(CACHE, "div_names_windows.csv"), index_col=0)
+    defense = pd.read_csv(os.path.join(CACHE, "defense_value.csv"), index_col=0)
+    defense_falls = pd.read_csv(os.path.join(CACHE, "defense_falls.csv"), parse_dates=["day"])
 
     parts = []
     add = parts.append
@@ -148,7 +150,7 @@ def main():
         return (f"{label}（{sym}）", r.ps_rank, "" if r.ps_rank >= 80 else "dim")
     rich_now = [cand("QLYS", "軸：クオリス"), cand("TENB", "軸：テナブル"), cand("AMGN", "アムジェン"), cand("CB", "チャブ"), cand("TRV", "トラベラーズ"), cand("KO", "コカ・コーラ"), cand("JNJ", "J&J"),
                 cand("PG", "P&G"), cand("WMT", "ウォルマート"), cand("DG", "ダラー・ゼネラル"), cand("LMT", "ロッキード"), cand("RTX", "RTX"), cand("GD", "ゼネラル・ダイナミクス"),
-                cand("NOC", "ノースロップ"), cand("PEP", "ペプシコ"), cand("MCD", "マクドナルド")]
+                cand("NOC", "ノースロップ"), cand("HII", "ハンティントン・インガルス"), cand("LHX", "L3ハリス"), cand("PEP", "ペプシコ"), cand("MCD", "マクドナルド")]
 
     # ---- baskets in past sell-offs (printed by the stage-5 run; prices from Yahoo, dividends included)
     windows = [("2015年6月〜16年2月（QLYS -65%）", -62.7, 9.0, -4.0, 0.1, -8.2, -54.8, -12.5), ("2018年秋", -31.6, -13.5, -11.6, 0.6, 0.8, -45.5, -21.3),
@@ -170,17 +172,22 @@ def main():
 <li><b>今週は +7.33%。</b>ただしセキュリティ株そのものが強かった週で、買い方の工夫による上乗せは小さい（軸の2銘柄を同じ日に半分ずつ買っただけで +6.82%）。</li>
 <li><b>軸の2銘柄は「割高」の水準。</b>過去13年、この水準に入ったあとの1年で2割近く下げたのは13回中5回。一方で、割高のまま倍になった時期もあるので、売る合図ではない。</li>
 <li><b>どの下落でも減らなかったのは短期の米国債だけ。</b>守りの株（防衛・食品など）は「ハイテクだけが売られる下げ」には効くが、「全部が売られる危機」では一緒に下げる。定番のコカ・コーラや P&amp;G は、今すでに軸と同じくらい割高。</li>
-<li><b>提案：軸が割高のあいだは、毎日の半分をセキュリティの外へ。</b>外の半分は短期国債（SHV）、残りは割高でない守りの株（NOC・GD・PEP・MCD）。平均の成績を年0.5ポイントほど下げるかわりに、割高で始めた場合の最悪を -63% から -24% にする「保険」。</li>
+<li><b>提案：軸が割高のあいだは、毎日の半分をセキュリティの外へ。</b>行き先は割高でない守りの株（NOC・GD・PEP・MCD）。その日に上がりすぎている銘柄の分は、買わずに現金のまま取っておく。平均の成績を年0.5ポイントほど下げるかわりに、割高で始めた場合の最悪を -63% から -24% にする「保険」。</li>
+<li><b>米国の防衛株は「割安」ではなく「普通の値段に戻った」段階。</b>NOC は3月の高値のとき利益の26倍、今は18倍弱で、過去10年の真ん中。本当に割安だった2011〜13年は8〜10倍だった。</li>
 </ol></section>""")
 
+    F_PICK = "LHX に替える"
+    F_WHY = (f"GD は利益の倍率が2011年以降で下から{defense.loc['GD', 'pe_place_since_2011']:.0f}%の高さ。LHX は{defense.loc['LHX', 'pe_place_since_2011']:.0f}%で、"
+             f"売上の伸びが {profile.loc['LHX', 'growth_before']:.1f}% から {profile.loc['LHX', 'growth']:.1f}% に上向き")
     add("""<section class="ask"><h2>決めてほしいこと</h2>
 <p>月曜の注文（日本時間 11月30日 23:47）までに返事をください。返事がなければ、月曜は今の決まりのまま出します（FFIV に 27.57ドル全額）。</p>""" + table(
         ["決めること", "おすすめ", "理由"],
         [["A. 軸が割高のあいだ、毎日の半分を外へ回す", "回す", "割高で始めたときの最悪が半分以下になる"],
-         ["B. 外の中身", "SHV 半分＋NOC・GD・PEP・MCD", "SHV だけが全局面で無傷。株は割高でないものに限る"],
+         ["B. 外の中身", "NOC・GD・PEP・MCD に等分。上がりすぎの銘柄の分は現金で取っておく", "短期国債（SHV）は現金とほぼ同じで、この金額だと利息は期間中20〜30セント"],
          ["C. 軸以外の1銘柄は1日の3分の1まで", "入れる", "月曜のような1銘柄への集中を防ぐ"],
          ["D. AXON を逃げ先から外す（持っている分はそのまま）", "外す", "過去7回の下落すべてで17〜56%下げた"],
-         ["E. UI を外の候補から外す", "外す", "+129% から -16% まで当たり外れが大きい"]], kind="text") + "</section>")
+         ["E. UI を外の候補から外す", "外す", "+129% から -16% まで当たり外れが大きい"],
+         ["F. 外の4銘柄のうち GD を HII か LHX に替える", F_PICK, F_WHY]], kind="text") + "</section>")
 
     add('<section><h2>今週の成績</h2><p>投じた 214.01ドルが、11月27日の終値で 229.70ドル（+15.70ドル）。同じ金額を同じ時刻に別の買い方をした場合と比べます。</p>'
         '<div class="pair"><div><p class="cap">同じ日・同じ金額で買った場合の成績</p>' + bars(week, plain=True) +
@@ -242,6 +249,21 @@ def main():
         "防衛は「織り込まれていない」のではなく、いったん織り込まれた期待が剥がれた状態。1月に国防予算を1.5兆ドルへ増やす案が出て話題も株価も盛り上がり、NOC と LMT は3月2日に高値をつけた。"
         "その後は NOC が高値から -27%、防衛の投資信託（ITA）が -18%。欧州はもっと極端で、ラインメタルは1月の高値から -60%。出所：<code>draft/x_defensive.py</code></p></section>")
 
+    # ---- are the US defense contractors cheap? (draft/defense_value.py)
+    dn = {"NOC": "ノースロップ（NOC）", "HII": "ハンティントン・インガルス（HII）", "LHX": "L3ハリス（LHX）", "LMT": "ロッキード（LMT）", "GD": "ゼネラル・ダイナミクス（GD）", "RTX": "RTX"}
+    def_rows = [[dn[k], f"{r.pe:.1f}倍", f"{r.pe_at_1y_high:.1f}倍", f"{r.pe_median_10y:.1f}倍", f"下から{r.pe_place_since_2011:.0f}%", signed(r.from_high, 0), signed(r.eps_growth, 0), f"{r.cash_yield:.1f}%"]
+                for k, r in defense.loc[list(dn)].iterrows()]
+    recent = defense_falls[defense_falls.day >= "1993-02-01"]
+    one, three = recent.dropna(subset=["1y"]), recent.dropna(subset=["3y"])
+    add('<section><h2>米国の防衛株は割安か</h2><p>各社の株価が利益の何倍かを、その会社自身の過去と比べた（11月27日の終値）。</p>' + table(
+        ["", "今", "今年の高値のとき", "過去10年の中央値", "2011年以降での位置", "高値から", "1株利益の伸び（1年）", "事業で残る現金（時価総額比）"], def_rows) +
+        f'<p class="note">割安とまでは言えない。起きたのは「割高だったものが普通に戻った」こと。この業種が本当に割安だったのは2011〜13年で、国防費の強制削減の不安から利益の8〜10倍まで売られた。'
+        f"NOC が過去10年の下限（利益の{defense.loc['NOC', 'pe_low_10y']:.1f}倍）まで売られると約{defense.loc['NOC', 'price_at_low_band']:.0f}ドルで、今から {(defense.loc['NOC', 'price_at_low_band'] / defense.loc['NOC', 'price'] - 1) * 100:.0f}%。"
+        f"6社が1年の高値から25%以上下げた場面は1993年以降に{len(one)}回あり、その後1年は平均 {one['1y'].mean():+.0f}%（上がった割合 {(one['1y'] > 0).mean() * 100:.0f}%）。ふだんの1年（+18%）とほぼ同じで、"
+        f"S&amp;P500 に勝ったのは {(one['1y_vs_spy'].dropna() > 0).mean() * 100:.0f}%。「下げたから買い」と言えるほどの差はない。"
+        "上がる根拠があるとすれば倍率の低さではなく、利益が伸びていることと、ハイテクだけが売られる下げに強いこと。全面安には弱く、リーマンで -45〜-59%、コロナで -26〜-50%。"
+        "出所：<code>draft/defense_value.py</code></p></section>")
+
     add('<section><h2>過去の下落で、それぞれどう動いたか</h2>' + table(
         ["下落の時期", "軸", "守りの株", "投資信託", "SHV", "UI", "AXON", "QQQ"],
         [[w[0]] + [heat(v) for v in w[1:]] for w in windows], kind="tight") +
@@ -252,15 +274,17 @@ def main():
 
     add('<section><h2>提案する決まりと、月曜の注文</h2><div class="box"><ol>'
         "<li><b>外へ回す割合を、軸の状態で決める。</b>軸2銘柄の順位の平均が80未満なら 0（今と同じ）、80以上なら毎日の半分、95以上なら7割。今は 92.7 なので半分。</li>"
-        "<li><b>外の中身。</b>半分を SHV、残りを NOC・GD・PEP・MCD に等分。その日に「上がりすぎ」の判定にかかった銘柄の分は SHV に回す。</li>"
+        "<li><b>外の中身。</b>NOC・GD・PEP・MCD に等分。その日に「上がりすぎ」の判定にかかった銘柄の分は買わず、現金のまま別枠で取っておく（翌日以降の買い付けには戻さない）。</li>"
         "<li><b>1銘柄の上限。</b>軸以外の1銘柄は1日の3分の1まで。超える分は外へ。</li>"
         "<li><b>AXON と UI を逃げ先から外す。</b>持っている分は売らない。</li>"
-        "<li>SHV は置き場。軸が普通〜割安に戻ったときに SHV を売って軸へ戻す決まりは、3か月後の見直しで作る。</li></ol></div>"
+        "<li>取っておいた現金の使い道は、3か月後の見直しで決める。まとまった額（目安1,000ドル以上）になっていれば短期国債（SHV）に移す。</li></ol></div>"
+        '<p class="note">11月28日の午前に出した第1版は「外の半分を SHV に」だった。SHV は現金とほぼ変わらないという指摘を受けて、上の形に直した。</p>'
         "<h3>月曜（米国 11月30日）の注文の試算</h3><p>11月27日の終値で判定、1日 27.57ドル。QLYS は順位97で買わない、TENB・GEN・FTNT は上がりすぎの判定、AXON は5日で +18%。セキュリティの中で買えるのは FFIV だけ。</p>" + table(
-            ["決まり", "注文"],
-            [["今のまま", "FFIV 27.57ドル（100%）"], ["今の決まり＋1銘柄の上限（超過は UI へ）", "UI 18.38ドル（67%）、FFIV 9.19ドル（33%）"],
-             ["提案", "SHV 16.08ドル（58%）、FFIV 9.19ドル（33%）、GD 2.30ドル（8%）"]], pick=2, kind="text") +
-        '<p class="note">提案では NOC・PEP・MCD も上がりすぎの判定にかかるので、その分が SHV に入る。全体が大きく上げた直後なので、月曜は「ほとんど置き場へ」になる。'
+            ["決まり", "注文", "買わずに取っておく分"],
+            [["今のまま", "FFIV 27.57ドル", "なし"], ["今の決まり＋1銘柄の上限（超過は UI へ）", "UI 18.38ドル、FFIV 9.19ドル", "なし"],
+             ["提案", "FFIV 9.19ドル、GD 4.59ドル", "13.78ドル"], ["提案で GD を HII に替えた場合", "FFIV 9.19ドル、HII 4.59ドル", "13.78ドル"],
+             ["提案で GD を LHX に替えた場合", "FFIV 9.19ドル、LHX 4.59ドル", "13.78ドル"]], pick=2, kind="text") +
+        '<p class="note">外へ回る67%（半分と、FFIV の上限を超えた分）を4銘柄に等分すると1銘柄 4.59ドル。NOC・PEP・MCD は上がりすぎの判定にかかるので、3銘柄分の 13.78ドルは買わずに取っておく。全体が大きく上げた直後なので、月曜は取っておく分が多い。'
         "決まりの計算にはこの切り替えを入れてあるが、初期値はオフで、本番の注文は変えていない。出所：<code>draft/diversify_preview.py</code></p></section>")
 
     add("""<section><h2>この研究の弱いところ</h2><div class="box"><ul>

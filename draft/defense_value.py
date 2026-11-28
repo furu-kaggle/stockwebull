@@ -48,7 +48,12 @@ def multiples(data):
         adj = p["adj"][sym].dropna()
         year = px.index[-1] - pd.DateOffset(years=1)
         free, paid = cash_yield(data, sym, px.iloc[-1])
-        rows[sym] = dict(price=px.iloc[-1], pe=pe.iloc[-1], pe_median_10y=pe[ten].median(), pe_place_10y=(pe[ten].dropna() <= pe.iloc[-1]).mean() * 100,
+        eps = earnings_per_share(sym)
+        since = pe.loc["2011":].dropna()                                # as far back as the filings data goes for all six
+        rows[sym] = dict(price=px.iloc[-1], pe=pe.iloc[-1], pe_at_1y_high=pe.loc[px.loc[year:].idxmax()], pe_place_since_2011=(since <= pe.iloc[-1]).mean() * 100,
+                         eps_growth=(eps.iloc[-1] / eps[eps.index <= eps.index[-1] - pd.Timedelta(days=330)].iloc[-1] - 1) * 100,
+                         price_at_low_band=pe[ten].quantile(0.05) * eps.iloc[-1],
+                         pe_median_10y=pe[ten].median(), pe_place_10y=(pe[ten].dropna() <= pe.iloc[-1]).mean() * 100,
                          pe_low_10y=pe[ten].quantile(0.05), pe_high_10y=pe[ten].quantile(0.95),
                          ps=ps.iloc[-1], ps_median_10y=ps[ten].median(), ps_place_10y=(ps[ten].dropna() <= ps.iloc[-1]).mean() * 100,
                          cash_yield=free, paid_out=paid, dividend=((adj.iloc[-1] / adj.loc[year:].iloc[0]) / (px.iloc[-1] / px.loc[year:].iloc[0]) - 1) * 100,
