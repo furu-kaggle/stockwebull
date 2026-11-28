@@ -5,8 +5,7 @@ How the shape would run (research/diversification.md, "追加6" and "追加7"):
   every day each pot spends its own cash / days left
   security pot   the live rules decide where it goes (core, then the names to move to); one name outside the
                  core takes at most a third of the whole day; what cannot be bought stays in the security pot
-  slot pots      one company or fund each; a slot that fails the band / jump check waits, and its pot catches
-                 up on later days
+  slot pots      one company or fund each, bought every day; a slot waits only after a 15% jump in five days
 
 The live runner (plan_live.py) now does the same thing; this stays as the stand-alone preview.
 
@@ -40,7 +39,7 @@ def main():
         bars[f].loc[day] = np.nan
     panels = build_panels(inside, bars={f: bars[f][inside] for f in bars})
     close = bars["close"][slots]
-    blocked = ((close > close.rolling(20).mean() + close.rolling(20).std()).shift(1) | (close / close.shift(5) - 1 >= CFG["jump"]).shift(1)).loc[day]
+    blocked = (close / close.shift(5) - 1 >= CFG["jump"]).shift(1).loc[day]      # a slot waits only after a 15% jump in five days (see plan_live.py)
 
     account = trade.account_v2.get_account_list().json()[0]["account_id"]
     cur = {c["currency"]: c for c in trade.account_v2.get_account_balance(account).json().get("account_currency_assets", [])}
@@ -69,7 +68,7 @@ def main():
     view = pd.DataFrame({"P/S rank": panels["rank"].loc[day], "above band": panels["above_band"].loc[day], "5d move%": panels["jump"].loc[day] * 100}).loc[CORE + cfg["prefer"] + ["FFIV"]]
     pd.set_option("display.width", 200, "display.float_format", "{:.1f}".format)
     print(view.to_string())
-    print("slots failing the check today:", [s for s in slots if blocked[s]] or "none", "\n")
+    print("slots waiting today:", [s for s in slots if blocked[s]] or "none", "\n")
     for s, v in sorted(orders.items(), key=lambda kv: -kv[1]):
         print(f"  BUY {s:5} ${v:6.2f}  ({v / budget * 100:4.1f}% of the day)   {SLOTS.get(s, 'security')}")
     sec = sum(v for s, v in orders.items() if s not in SLOTS)

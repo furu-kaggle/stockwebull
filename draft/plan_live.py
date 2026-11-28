@@ -6,7 +6,8 @@ Buys are market orders for a fractional quantity, which only fill in the regular
 
 From 2026-11-30 the plan's cash is held in pots: half for security (the rules in plan_strategy decide where it
 goes) and 10% for each of five other slots (one company or fund each). Every day each pot spends its own cash
-divided by the days left; a name that fails the band / jump check waits and its pot catches up later.
+divided by the days left. A security name that fails the band / jump check is not bought (the money stays in
+the security pot); a slot is bought every day unless it jumped 15% in five days.
 
 Usage: python draft/plan_live.py [--live] [--status]
 """
@@ -95,10 +96,11 @@ def main():
         if bars[f].index[-1] < today:
             bars[f].loc[today] = np.nan
     panels = build_panels(symbols, bars={f: bars[f][symbols] for f in bars})
-    slot_close = bars["close"][slots]                          # the slots are checked on price alone: not above the band, no 15% jump in five days
-    slot_band = (slot_close > slot_close.rolling(20).mean() + slot_close.rolling(20).std()).shift(1).loc[today].fillna(False)
-    slot_jump = (slot_close / slot_close.shift(5) - 1).shift(1).loc[today]
-    slot_wait = slot_band | (slot_jump >= CFG["jump"])
+    slot_close = bars["close"][slots]
+    # A slot is bought every day; it waits only after a 15% jump in five days. Waiting whenever the price is above
+    # its band was tried on 13 years of these names: a third of the plans ended with money unspent (15% of the pot
+    # on average) and the result was worse than buying every day (+2.84% against +3.25% sixty days after the plan).
+    slot_wait = (slot_close / slot_close.shift(5) - 1).shift(1).loc[today] >= CFG["jump"]
 
     balance = trade.account_v2.get_account_balance(account).json()
     cur = {c["currency"]: c for c in balance.get("account_currency_assets", [])}
@@ -120,7 +122,7 @@ def main():
     pots["security"] = max(pots["security"] + cash - sum(pots.values()), 0.0)     # fills land a few cents off the estimate; security absorbs the difference
     orders = decide(today, pots["security"], shares, days_left, plain_daily * SECURITY_SHARE, panels, CORE, others,
                     dict(CFG, prefer=PREFER, cap_other=CAP_OTHER / SECURITY_SHARE))
-    for s in slots:                                            # a slot that fails the check waits; its pot catches up on later days
+    for s in slots:                                            # a slot that jumped waits; its pot catches up on later days
         amount = min(pots[s] / max(days_left, 1), pots[s])
         if not slot_wait[s] and amount >= CFG["min_order"]:
             orders[s] = amount
