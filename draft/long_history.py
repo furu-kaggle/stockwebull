@@ -19,9 +19,10 @@ from indicator_compare import as_of, trailing_rank
 HERE = os.path.dirname(os.path.abspath(__file__))
 YDIR, SDIR = os.path.join(HERE, "cache", "yahoo"), os.path.join(HERE, "cache", "sec")
 AGENT = {"User-Agent": "Mozilla/5.0 (research script)"}
-CIK = {"QLYS": 1107843, "TENB": 1660280}
+CIK = {"QLYS": 1107843, "TENB": 1660280}                       # others are looked up in the SEC's ticker list
 REVENUE_TAGS = ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet", "RevenueFromContractWithCustomerIncludingAssessedTax"]
-SHARE_TAG = "WeightedAverageNumberOfDilutedSharesOutstanding"
+SHARE_TAGS = ["WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasicAndDiluted",
+              "WeightedAverageNumberOfShareOutstandingBasicAndDiluted", "WeightedAverageNumberOfSharesOutstandingBasic"]   # loss-making companies report only the later ones
 
 
 def _get(url):
@@ -52,30 +53,44 @@ def prices(symbols, refresh=False):
     return {"close": pd.DataFrame(close).sort_index(), "adj": pd.DataFrame(adj).sort_index()}
 
 
+def _cik(symbol):
+    if symbol in CIK:
+        return CIK[symbol]
+    path = os.path.join(SDIR, "_tickers.json")
+    if not os.path.exists(path):
+        open(path, "wb").write(_get("https://www.sec.gov/files/company_tickers.json"))
+    table = {row["ticker"]: row["cik_str"] for row in json.load(open(path)).values()}
+    return table[symbol.replace(" ", "-")]
+
+
 def _facts(symbol):
     os.makedirs(SDIR, exist_ok=True)
     path = os.path.join(SDIR, f"{symbol}.json")
     if not os.path.exists(path):
-        open(path, "wb").write(_get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK[symbol]:010d}.json"))
+        open(path, "wb").write(_get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{_cik(symbol):010d}.json"))
+        time.sleep(0.3)
     return json.load(open(path))["facts"]["us-gaap"]
 
 
 def _periods(facts, tags, unit):
-    """One row per reporting period: value and the day it was first filed."""
+    """One row per reporting period: its value as first filed, and the day of that filing."""
     rows = []
-    for tag in tags:
+    for prio, tag in enumerate(tags):
         for x in facts.get(tag, {}).get("units", {}).get(unit, []):
             if "start" in x:
-                rows.append((pd.Timestamp(x["start"]), pd.Timestamp(x["end"]), float(x["val"]), pd.Timestamp(x["filed"])))
-    t = pd.DataFrame(rows, columns=["start", "end", "val", "filed"]).sort_values("filed")
-    t = t.groupby(["start", "end"], as_index=False).first()            # the first filing of each period: what was known at the time
-    t["months"] = ((t.end - t.start).dt.days / 30.4).round().astype(int)
+                rows.append((pd.Timestamp(x["start"]), pd.Timestamp(x["end"]), float(x["val"]), pd.Timestamp(x["filed"]), prio))
+    t = pd.DataFrame(rows, columns=["start", "end", "val", "filed", "prio"])
+    # The first filing of each period is what was known at the time; later filings restate, and some carry a
+    # wrong period. Within one filing, the earlier tag in `tags` wins.
+    t = t.sort_values(["filed", "prio"]).groupby(["start", "end"], as_index=False).first()
+    days = (t.end - t.start).dt.days                                   # quarters of 12 or 13 weeks, years of 52 or 53
+    t["months"] = np.select([days.between(75, 105), days.between(160, 200), days.between(245, 290), days.between(350, 380)], [3, 6, 9, 12], 0)
     return t
 
 
 def sales_per_share(symbol):
     facts = _facts(symbol)
-    rev, shr = _periods(facts, REVENUE_TAGS, "USD"), _periods(facts, [SHARE_TAG], "shares")
+    rev, shr = _periods(facts, REVENUE_TAGS, "USD"), _periods(facts, SHARE_TAGS, "shares")
     year = rev[rev.months == 12].set_index("end")
     out = {}
     for end, row in year.iterrows():                                   # a full year is the trailing 12 months as of its filing
@@ -98,8 +113,11 @@ def sales_per_share(symbol):
     return (ttm.rev.astype(float) / ttm.shares).dropna()
 
 
+SINCE = {"TENB": "2019-06-01"}      # share counts before then mix in the months before the listing (July 2018)
+
+
 def ps_rank(symbol, close):
-    px = close.dropna()
+    px = close.dropna().loc[SINCE.get(symbol):]
     return trailing_rank(px / as_of(sales_per_share(symbol), px.index)) * 100
 
 
