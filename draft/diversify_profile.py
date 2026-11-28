@@ -24,7 +24,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "cache", "div_profile.pkl")
 STOCKS = {"defense": ["NOC", "LMT", "GD", "RTX", "LHX", "HII"], "health": ["LLY", "AMGN", "MRK", "JNJ", "ABBV", "UNH", "PFE"], "gold miner": ["NEM"], "insurers": ["CB", "TRV", "PGR"],
           "staples": ["DG", "WMT", "COST", "KR", "KO", "PEP", "GIS", "PG", "CL", "MO", "PM", "MCD", "YUM", "SBUX", "CMG", "DRI"], "exchanges": ["CBOE", "CME", "ICE"], "telecom": ["T", "VZ"], "energy": ["XOM", "CVX"],
-          "power": ["DUK", "SO", "NEE", "AEP", "XEL"], "waste": ["WM", "RSG"], "now in the plan": ["UI", "AXON"], "core": ["QLYS", "TENB"]}
+          "power": ["DUK", "SO", "NEE", "AEP", "XEL"], "waste": ["WM", "RSG"], "more candidates": ["REGN", "GILD", "BMY", "VRTX", "NVO", "CVS", "CI", "ELV", "BDX", "MDT", "TSN", "HSY", "KDP", "CLX", "KMB", "O", "PSA", "AWK", "ALL", "BRK B"],
+          "now in the plan": ["UI", "AXON"], "core": ["QLYS", "TENB"]}
 FUNDS = {"SHV": "0-1 year Treasuries", "VGSH": "1-3 year Treasuries", "ITA": "defense fund", "XLV": "health fund", "XLP": "staples fund", "XLU": "utilities fund",
          "XLE": "energy fund", "HDV": "high-dividend fund", "VYM": "high-dividend fund", "GLD": "gold", "SPY": "S&P 500", "QQQ": "Nasdaq 100"}
 
